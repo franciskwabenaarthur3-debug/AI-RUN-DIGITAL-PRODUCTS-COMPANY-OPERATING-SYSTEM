@@ -1,0 +1,29 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --color-charcoal-950: #111315;
+    --color-charcoal-900: #1a1d21;
+    --color-charcoal-800: #262a30;
+    --color-charcoal-700: #353a42;
+}
+
+@layer components {
+    .form-input {
+        @apply block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/30 focus:outline-none disabled:bg-zinc-100 disabled:text-zinc-500;
+    }
+    .form-label {
+        @apply mb-1 block text-sm font-medium text-zinc-800;
+    }
+    .btn-primary {
+        @apply inline-flex items-center justify-center rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700;
+    }
+    .card {
+        @apply rounded-lg border border-zinc-200 bg-white p-5 shadow-sm;
+    }
+}
