@@ -96,7 +96,7 @@ Indexes: `(resource_type, resource_id)`, `(actor_type, actor_id)`.
 | converted_at | timestamp, null | |
 | created_by | FK users, null, null on delete | |
 
-`assigned_agent_id` from the master plan is deferred until the `agents` table exists (Phase 3), so it can be a real foreign key.
+| assigned_agent_id | FK agents, null, null on delete | added in Phase 3 |
 
 ## lead_activities
 
@@ -110,3 +110,75 @@ Append-only history (model refuses update/delete). Index `(lead_id, id)`.
 | actor_type, actor_id | string(32), bigint null | |
 | metadata | json, null | e.g. `{from, to}` for status changes; changed field names for edits |
 | created_at | timestamp | |
+
+## agents
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| name, slug (unique), role (unique) | string | role is one of the seven logical agents |
+| description | text | |
+| instructions_version | string(32) | recorded on every run |
+| runtime | string(32) | which runtime executes it (`mock` today) |
+| model_key | string, null | |
+| configuration | json, null | reserved for runtime settings |
+| status | string(16), indexed | `enabled` / `disabled`; default disabled; founder-only |
+| max_steps, max_retries, timeout_seconds, max_tokens_per_run | integers | enforced limits |
+| monthly_budget_minor | bigint | per-agent budget for paid runtimes |
+| review_required | boolean | results go to awaiting_review |
+
+## agent_permissions
+
+`(agent_id, tool_name, resource_scope)` unique. `allowed` boolean, `limits` json. Tool names must come from `ToolCatalog`. Cascade-deleted with the agent.
+
+## tasks
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| agent_id | FK agents, null, null on delete | |
+| parent_task_id | FK tasks, null | subtasks |
+| title, description | string, text | |
+| input | json, null | passed to the runtime |
+| status | string(32), indexed | see [workflows](workflows.md#task-lifecycle) |
+| priority | string(16), indexed | low, normal, high, urgent |
+| due_at | timestamp, null, indexed | |
+| result | json, null | validated output of the successful run |
+| failure_reason | text, null | |
+| attempts | smallint | total runs started |
+| auto_retries | tinyint | automatic retries used in this queue cycle |
+| created_by_type, created_by_id | string, bigint null | `user`, later `agent` |
+| queued_at, completed_at | timestamp, null | |
+
+`project_id` is added with the projects module (Phase 7). Index `(agent_id, status)`.
+
+## task_dependencies
+
+Composite primary key `(task_id, depends_on_task_id)`, both FK tasks, cascade.
+
+## agent_runs
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| task_id, agent_id | FK, restrict on delete | |
+| attempt | smallint | **unique with task_id**: one run per attempt |
+| status | string(16), indexed | running, succeeded, failed |
+| runtime, model_key, instructions_version | string | what actually ran |
+| started_at, finished_at, deadline_at | timestamps | |
+| input_hash | char(64) | SHA-256 of task title, description, input and instructions version |
+| output | json, null | validated output |
+| error_code, error_message | string indexed, text | see the runbook |
+| usage_metadata | json, null | steps, total tokens |
+| correlation_id | uuid, indexed | |
+
+## model_usage
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| agent_run_id, agent_id | FK, restrict | |
+| provider, model | string | |
+| input_tokens, output_tokens | unsigned int | |
+| estimated_cost_minor | bigint | from the runtime |
+| actual_cost_minor | bigint, null | from provider billing only; never estimated |
+| currency | char(3) | |
+| created_at | timestamp, indexed | index `(agent_id, created_at)` for monthly sums |
+
+Budget checks use `actual_cost_minor` when present, otherwise the estimate.

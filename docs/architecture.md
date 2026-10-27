@@ -30,6 +30,14 @@ The app uses conventional Laravel directories, with module boundaries expressed 
 | `app/Services/CustomerService.php`, `ServicePackageService.php` | Customer and package writes with audit |
 | `app/Models/Concerns/Searchable.php` | Literal, case-insensitive search scope |
 | `app/Support/Domain.php` | Website URL → normalized domain |
+| `app/Agents/ToolCatalog.php` | Fixed list of tools agents can be granted |
+| `app/Agents/OutputSchema.php` | Validation of agent output |
+| `app/Agents/Runtime/*` | Runtime contract, request/result types, normalized failures, `MockRuntime`, `RuntimeRegistry` |
+| `app/Services/TaskService.php` | Task lifecycle changes (queue, retry, cancel, review, dependencies) |
+| `app/Services/TaskRunner.php` | Executes one task: claim, run, finish, with all limits |
+| `app/Jobs/RunAgentTask.php` | Queue wrapper for the runner |
+| `app/Services/AgentService.php` | Founder-only agent status and permission changes |
+| `app/Console/Commands/RecoverStaleRuns.php` | Recovers runs lost by crashed workers |
 | `config/company_os.php` | Allowed currencies, login throttle, redacted keys |
 
 ## Decisions

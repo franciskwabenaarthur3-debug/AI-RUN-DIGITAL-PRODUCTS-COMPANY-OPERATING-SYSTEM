@@ -14,6 +14,7 @@ This describes controls that are implemented now. Planned controls are listed se
 - **Mass assignment:** lead status, opt-out and conversion fields, and customer billing details are not fillable; they change only through services.
 - **Opt-out:** an opted-out lead is flagged `do_not_contact`, cannot enter outreach states, and its email/domain cannot be re-entered as a new lead because of the unique constraints.
 - **Search:** user search terms are bound parameters with LIKE wildcards escaped.
+- **Agents:** see [agent policies](agent-policies.md). Agents start disabled; only founders enable them or change tool permissions; tools come from a fixed catalog; step, token, timeout, retry and budget limits are enforced by the runner, not by instructions; output is schema-validated and never treated as proof of an external action; the mock runtime is off outside local/testing.
 - **Audit:** append-only `audit_logs` (model guard + PostgreSQL trigger). Failed logins store a SHA-256 hash of the attempted email, not the email or password. Keys matching `config('company_os.redacted_keys')` are replaced with `[redacted]` at any nesting depth.
 - **Tracing:** every response carries an `X-Request-Id` (a valid incoming UUID is reused, anything else replaced). It is stored on audit records.
 - **Sessions:** stored in the database and encrypted (`SESSION_ENCRYPT=true`). Set `SESSION_SECURE_COOKIE=true` on HTTPS environments.
@@ -23,7 +24,6 @@ This describes controls that are implemented now. Planned controls are listed se
 ## Planned (not implemented yet)
 
 - MFA for founder accounts (before the first pilot).
-- Agent identities, tool gateway permissions, approval engine (Phases 3 to 5).
-- Enforcement of the AI budget and emergency pause (Phase 3, once agents exist).
+- Tool gateway execution and the approval engine (Phase 4); AI provider adapter (Phase 5).
 - SSRF protection for website-reading tools (with the first such tool).
 - Security headers / CSP middleware, upload validation, retention policies.

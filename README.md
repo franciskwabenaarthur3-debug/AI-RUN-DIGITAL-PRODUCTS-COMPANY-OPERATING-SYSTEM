@@ -2,7 +2,7 @@
 
 An AI-assisted operating system for a small digital products company (websites, WordPress work, maintenance, digital products). The founder stays in control: AI agents will work through registered tools, persisted tasks and enforceable approvals, never through unrestricted access.
 
-**Status: Phase 2 (CRM).** What exists today is listed below. Nothing else should be assumed to work yet.
+**Status: Phase 3 (agent infrastructure).** What exists today is listed below. Nothing else should be assumed to work yet.
 
 | Area | State |
 | --- | --- |
@@ -18,7 +18,11 @@ An AI-assisted operating system for a small digital products company (websites, 
 | Customers with encrypted, founder-only billing details | Done |
 | Append-only audit log with secret redaction and correlation ids | Done |
 | Founder dashboard, settings page, audit log page | Done |
-| Agents, approvals, proposals, projects, maintenance, AI gateway | Not started (Phases 3 to 8) |
+| Agent registry (7 logical agents, disabled by default), founder-only enable/disable and tool permissions | Done |
+| Tasks: lifecycle state machine, dependencies, review, retry, cancel, execution history and cost | Done |
+| Task runner: atomic claim, step/token/deadline/budget limits, bounded retries, structured output validation, stale-run recovery | Done |
+| Deterministic mock agent runtime | Done (no real AI provider yet) |
+| Tool gateway, approvals, AI provider, proposals, projects, maintenance | Not started (Phases 4 to 8) |
 
 ## Requirements
 
@@ -53,7 +57,7 @@ For local-only demo data (a founder `founder@example.test` / `local-password-123
 php artisan db:seed --class=LocalDemoSeeder   # refuses to run outside local/testing
 ```
 
-`composer dev` runs the web server, queue worker, log tail and Vite together.
+`composer dev` runs the web server, queue worker, log tail and Vite together. Agent tasks run on the queue, so a worker must be running (`php artisan queue:work`), and the scheduler (`php artisan schedule:work` locally, or a cron entry for `schedule:run` in production) recovers runs lost by crashed workers.
 
 ## Tests
 
@@ -72,6 +76,8 @@ CI (`.github/workflows/tests.yml`) runs both suites on PHP 8.2 with PostgreSQL 1
 - [Database schema](docs/database-schema.md)
 - [Security](docs/security.md)
 - [Workflows](docs/workflows.md)
+- [Agent policies](docs/agent-policies.md)
+- [Operations runbook](docs/operations-runbook.md)
 - [Test report](docs/test-report.md)
 
-The remaining documents listed in the master plan (agent policies, deployment, runbook, backup and recovery, user manual) will be written as the features they describe are built.
+The remaining documents listed in the master plan (deployment, backup and recovery, user manual) will be written as the features they describe are built.
