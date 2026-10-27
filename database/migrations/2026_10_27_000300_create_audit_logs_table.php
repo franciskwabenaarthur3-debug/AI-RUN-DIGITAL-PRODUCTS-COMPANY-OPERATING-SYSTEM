@@ -27,7 +27,7 @@ return new class extends Migration
 
         if (DB::getDriverName() === 'pgsql') {
             DB::unprepared(<<<'SQL'
-                CREATE FUNCTION audit_logs_block_mutation() RETURNS trigger AS $$
+                CREATE OR REPLACE FUNCTION audit_logs_block_mutation() RETURNS trigger AS $$
                 BEGIN
                     RAISE EXCEPTION 'audit_logs is append-only';
                 END;
