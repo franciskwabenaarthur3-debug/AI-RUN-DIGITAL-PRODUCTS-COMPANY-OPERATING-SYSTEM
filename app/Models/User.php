@@ -52,6 +52,12 @@ class User extends Authenticatable
         return $this->role === UserRole::Founder;
     }
 
+    /** Founders and operators may create and change business records. */
+    public function canOperate(): bool
+    {
+        return $this->is_active && $this->hasRole(UserRole::Founder, UserRole::Operator);
+    }
+
     public function hasRole(UserRole ...$roles): bool
     {
         return in_array($this->role, $roles, true);
