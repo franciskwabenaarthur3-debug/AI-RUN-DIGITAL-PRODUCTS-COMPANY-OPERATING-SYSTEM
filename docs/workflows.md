@@ -44,3 +44,40 @@ Not yet checked: duplicates between leads and existing customers, and fuzzy comp
 ## Follow-ups
 
 `next_follow_up_at` can be set on the lead form or from the lead page. The dashboard and the "Follow-up due" filter count leads whose follow-up time has passed, excluding converted, unsubscribed, lost and disqualified leads. No reminders are sent yet.
+
+## Task lifecycle
+
+Defined in `App\Enums\TaskStatus`; changed only by `TaskService` (people) and `TaskRunner` (execution), each under a row lock.
+
+| From | Allowed next states |
+| --- | --- |
+| created | queued, blocked, cancelled |
+| queued | running, blocked, cancelled |
+| running | completed, awaiting_review, awaiting_approval, failed, blocked, queued (automatic retry) |
+| awaiting_review | completed (accept), failed (reject with reason), cancelled |
+| awaiting_approval | completed, failed, cancelled (used from Phase 4) |
+| blocked | queued, cancelled |
+| failed | queued (manual retry), cancelled |
+| completed, cancelled | none |
+
+A running task cannot be cancelled; cancel it after the run ends, or disable the agent.
+
+### Queueing
+
+- Queueing requires an assigned, enabled agent.
+- If any dependency is not completed, the task becomes `blocked` ("Waiting for dependencies"). When a task completes, its blocked dependents whose dependencies are all complete are queued automatically.
+- Queueing dispatches a `RunAgentTask` job after the database transaction commits.
+
+### Execution (`TaskRunner`)
+
+1. **Claim** (one transaction, task row locked): skip if the task is not `queued` (duplicate delivery) or the company is paused. Block if the agent is missing or disabled, a dependency is open, the runtime is unavailable, or (paid runtimes) the company or agent budget would be exceeded. Otherwise create an `agent_runs` row for attempt *n* and set the task to `running`.
+2. **Run** the runtime outside any transaction, with step, token and deadline limits.
+3. **Finish** (one transaction, task and run locked): record usage (always, even on failure); if this run no longer owns the task, mark it `superseded` and change nothing else. Reject late, over-step, over-token or schema-invalid results. On success store the output and move to `awaiting_review` (or `completed` if the agent does not require review). On a retryable error with retries left, go back to `queued` and dispatch a new job with exponential backoff; otherwise `failed`.
+
+### Recovery
+
+`company-os:recover-stale-runs` (every five minutes) marks runs still `running` more than `AGENTS_STALE_RUN_GRACE_SECONDS` past their deadline as `worker_lost`, then retries or fails their tasks within the agent's retry limit.
+
+### Manual actions
+
+Retry (failed/blocked → queued, resets automatic retries), cancel (with confirmation), accept or reject a reviewed result. All are audited and limited to founders and operators.

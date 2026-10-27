@@ -8,7 +8,10 @@ use Illuminate\Support\Facades\DB;
 
 class CompanySettingsService
 {
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly TaskService $tasks,
+    ) {}
 
     /**
      * @param  array{company_name: string, default_currency: string, timezone: string, approval_policy: string, monthly_ai_budget: string, operating_status: string}  $input
@@ -36,6 +39,11 @@ class CompanySettingsService
 
             $settings->save();
             $this->audit->record('settings.updated', $settings, ['changes' => $changes]);
+
+            // Lifting the emergency pause resumes tasks left waiting in the queue.
+            if (isset($changes['operating_status']) && ! $settings->isPaused()) {
+                $this->tasks->dispatchQueued();
+            }
 
             return $settings;
         });

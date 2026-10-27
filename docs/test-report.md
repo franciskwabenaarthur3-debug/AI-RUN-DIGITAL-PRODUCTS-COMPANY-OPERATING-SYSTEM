@@ -1,34 +1,36 @@
 # Test report
 
-**Date:** 2026-10-27 · **Branch:** `phase-2-crm`
+**Date:** 2026-10-27 · **Branch:** `phase-3-agents`
 **Environment:** PHP 8.3.6 (CLI), PostgreSQL 16.15, Node 22.22. CI runs PHP 8.2 + PostgreSQL 16.
 
 ## Results
 
 | Suite | Result |
 | --- | --- |
-| `php artisan test` (SQLite in-memory) | 100 passed, 1 skipped (the PostgreSQL-only trigger test) |
-| `php artisan test` (PostgreSQL 16) | 101 passed |
+| `php artisan test` (SQLite in-memory) | 147 passed, 1 skipped (the PostgreSQL-only trigger test) |
+| `php artisan test` (PostgreSQL 16) | 148 passed |
 | `vendor/bin/pint` | passed |
 | `npm run build` | passed |
-| Playwright smoke test: create package, create lead, duplicate website blocked, change status, add note, convert to customer, dashboard, mobile lead list | passed |
+| End-to-end with the database queue: log in, enable Sales Agent, create a task, `queue:work --once`, task reaches awaiting review with run history, accept result | passed |
 
-Running on PostgreSQL caught one bug SQLite did not: a backslash LIKE escape that PDO's pgsql driver misparses. Search now uses `!` as the escape character.
+Tests use the `sync` queue driver and the deterministic mock runtime; no test calls a real AI provider.
 
 ## Coverage by area
 
-Phase 1 coverage (authentication, settings, audit, money, console user creation) is unchanged. Added in Phase 2:
+Phases 1–2 coverage is unchanged (authentication, settings, audit, money, CRM). Added in Phase 3:
 
-- **Leads:** create with normalized email/domain; invalid input rejected (including `javascript:` URLs); duplicate email (case-insensitive) and duplicate domain (after normalization) rejected with the existing lead named; database unique constraints as backstop; edit does not flag itself; status/opt-out/customer fields cannot be mass-assigned via the edit form; search, filters, pagination; wildcard search terms matched literally; invalid filters rejected; follow-up due filter and dashboard count; follow-up schedule and clear; notes escaped on output.
-- **Lead workflow:** valid transition recorded in activity and audit; skipped steps refused; `converted`/`unsubscribed` not settable directly; opt-out requires confirmation and sets do-not-contact; unsubscribed leads cannot enter outreach; do-not-contact blocks outreach even if status would allow it; opted-out contact cannot be re-added; conversion creates exactly one customer across repeated HTTP posts, service calls and stale model instances; conversion requires confirmation and an eligible status; unsubscribed leads cannot be converted; activities immutable.
-- **Customers:** billing encrypted at rest; founder sees billing, operator neither sees nor can overwrite it; billing never in audit logs or serialization; viewer read-only; validation; search; 404 for missing records.
-- **Service packages:** founder creates with minor-unit price and cleaned scope lists; price changes audited with old and new values; deactivation; operators and viewers blocked on direct requests; validation (duplicate slug, empty scope, negative or 3-decimal price, unknown currency, bounds).
-- **Access:** guests redirected from all CRM routes; viewers get 403 on every CRM write endpoint.
+- **Task state machine:** normal lifecycle; arbitrary jumps refused; terminal states.
+- **Output validation:** non-objects, lists, empty output, missing summary, a "completed action" kind, unknown fields, malformed sources and oversized text rejected; research needs sources or assumptions.
+- **Execution:** successful run records output, attempt, instructions version, correlation id, input hash and usage (actual cost left empty); review-free agents complete directly; invalid output rejected and not stored; loops stop at the step limit; token cap enforced; timeouts retried exactly `max_retries` times then failed; transient errors recover on retry; non-retryable errors fail at once; results after the deadline treated as timeouts; usage recorded for failed runs.
+- **Controls:** disabled agent cannot be queued; an agent disabled after queueing is blocked by the runner; duplicate deliveries do nothing and the database refuses a second run per attempt; emergency pause holds queued work and lifting it resumes; mock runtime unavailable when disabled by config; paid runtimes blocked by company budget (including budget 0), by projected spend, and by agent budget, with an audit record.
+- **Dependencies:** dependent stays blocked until its dependency is accepted, then runs automatically.
+- **Recovery:** a run left "running" past its deadline is marked `worker_lost` and its task retried; runs within their deadline are left alone; a late result for a task that moved on is discarded as `superseded`; recovery is on the schedule.
+- **Agent management:** seeder creates seven disabled agents and does not overwrite founder changes; ungranted and unknown tools denied; enable requires confirmation and is audited; permissions limited to the catalog and audited; operators and viewers get 403 on every agent change.
+- **Task UI:** create-and-queue from the form; validation; status/result/attempts cannot be injected; accept, reject (reason required), double accept refused; retry and cancel (confirmation required), retry after cancel refused; viewers get 403 on every task action; list filters; dashboard counts; guests redirected.
 
 ## Known limitations
 
-- No MFA yet.
-- No duplicate check between leads and existing customers.
-- Follow-ups are tracked but no reminders are sent.
-- Concurrency of conversion is tested sequentially (repeated and stale calls); true parallel requests rely on the row lock and the unique `customer_id` constraint.
-- MySQL has not been tested.
+- No real AI provider yet; only the mock runtime exists.
+- Tools are permissioned but not executable until the tool gateway (Phase 4).
+- Concurrency is tested through sequential duplicate deliveries and the unique `(task_id, attempt)` constraint, not with parallel workers.
+- No MFA yet. MySQL untested.

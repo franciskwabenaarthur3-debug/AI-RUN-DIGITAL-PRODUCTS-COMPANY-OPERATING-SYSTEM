@@ -31,11 +31,30 @@
                 </dd>
             </div>
             <div class="card">
-                <dt class="text-sm text-zinc-600">Monthly AI budget (limit)</dt>
-                <dd class="mt-1 text-lg font-semibold">{{ $aiBudget }}</dd>
-                <dd class="text-xs text-zinc-500">Spending tracking arrives with the agent infrastructure.</dd>
+                <dt class="text-sm text-zinc-600">AI spend this month (estimated)</dt>
+                <dd class="mt-1 text-lg font-semibold">{{ $aiSpent }}</dd>
+                <dd class="text-xs text-zinc-500">Budget limit {{ $aiBudget }}</dd>
             </div>
         </dl>
+    </section>
+
+    <section aria-labelledby="work" class="card mb-8">
+        <div class="mb-3 flex items-center justify-between">
+            <h2 id="work" class="font-semibold">Tasks by status</h2>
+            <a href="{{ route('tasks.index') }}" class="text-sm font-medium text-emerald-700 underline">All tasks</a>
+        </div>
+        @if ($tasksByStatus->isEmpty())
+            <p class="text-sm text-zinc-600">No tasks yet. <a href="{{ route('agents.index') }}" class="font-medium text-emerald-700 underline">Enable an agent</a> and give it a task.</p>
+        @else
+            <ul class="flex flex-wrap gap-3 text-sm">
+                @foreach (App\Enums\TaskStatus::cases() as $status)
+                    @if ($tasksByStatus->has($status->value))
+                        <li><a href="{{ route('tasks.index', ['status' => $status->value]) }}" class="inline-flex items-center gap-2 hover:underline"><x-status-badge :status="$status" /> {{ $tasksByStatus[$status->value] }}</a></li>
+                    @endif
+                @endforeach
+            </ul>
+        @endif
+        <p class="mt-3 text-sm {{ $failedRuns ? 'text-red-700' : 'text-zinc-600' }}">{{ $failedRuns }} failed agent run{{ $failedRuns === 1 ? '' : 's' }} in the last 7 days.</p>
     </section>
 
     <div class="grid gap-6 lg:grid-cols-2">
@@ -56,7 +75,7 @@
                 </li>
                 <li class="flex gap-2">
                     <span aria-hidden="true">○</span>
-                    <span>Agents, approvals, proposals and projects are added in later phases and will appear in the menu when they work.</span>
+                    <span>Approvals, proposals and projects are added in later phases and will appear in the menu when they work.</span>
                 </li>
             </ol>
         </section>
