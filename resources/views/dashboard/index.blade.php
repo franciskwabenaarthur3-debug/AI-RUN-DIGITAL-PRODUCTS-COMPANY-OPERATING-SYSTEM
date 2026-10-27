@@ -6,7 +6,24 @@
 
     <section aria-labelledby="overview" class="mb-8">
         <h2 id="overview" class="sr-only">Overview</h2>
-        <dl class="grid gap-4 sm:grid-cols-3">
+        <dl class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="card">
+                <dt class="text-sm text-zinc-600">Leads</dt>
+                <dd class="mt-1 text-lg font-semibold"><a href="{{ route('leads.index') }}" class="hover:underline">{{ $leadCount }}</a></dd>
+                <dd class="text-xs text-zinc-500">{{ $qualifiedCount }} qualified</dd>
+            </div>
+            <div class="card">
+                <dt class="text-sm text-zinc-600">Follow-ups due</dt>
+                <dd class="mt-1 text-lg font-semibold {{ $followUpsDue > 0 ? 'text-amber-700' : '' }}"><a href="{{ route('leads.index', ['follow_up' => 'due']) }}" class="hover:underline">{{ $followUpsDue }}</a></dd>
+            </div>
+            <div class="card">
+                <dt class="text-sm text-zinc-600">Active customers</dt>
+                <dd class="mt-1 text-lg font-semibold"><a href="{{ route('customers.index', ['status' => 'active']) }}" class="hover:underline">{{ $customerCount }}</a></dd>
+            </div>
+            <div class="card">
+                <dt class="text-sm text-zinc-600">Active service packages</dt>
+                <dd class="mt-1 text-lg font-semibold"><a href="{{ route('service-packages.index') }}" class="hover:underline">{{ $activePackages }}</a></dd>
+            </div>
             <div class="card">
                 <dt class="text-sm text-zinc-600">Operating status</dt>
                 <dd class="mt-1 text-lg font-semibold {{ $settings->isPaused() ? 'text-amber-700' : 'text-emerald-700' }}">
@@ -17,10 +34,6 @@
                 <dt class="text-sm text-zinc-600">Monthly AI budget (limit)</dt>
                 <dd class="mt-1 text-lg font-semibold">{{ $aiBudget }}</dd>
                 <dd class="text-xs text-zinc-500">Spending tracking arrives with the agent infrastructure.</dd>
-            </div>
-            <div class="card">
-                <dt class="text-sm text-zinc-600">Active service packages</dt>
-                <dd class="mt-1 text-lg font-semibold">{{ $activePackages }}</dd>
             </div>
         </dl>
     </section>
@@ -35,11 +48,15 @@
                 </li>
                 <li class="flex gap-2">
                     <span aria-hidden="true">{{ $activePackages > 0 ? '✓' : '○' }}</span>
-                    <span>Define service packages with real scope and pricing (package management is the next build phase).</span>
+                    <span>Define <a href="{{ route('service-packages.index') }}" class="font-medium text-emerald-700 underline">service packages</a> with real scope and pricing.</span>
+                </li>
+                <li class="flex gap-2">
+                    <span aria-hidden="true">{{ $leadCount > 0 ? '✓' : '○' }}</span>
+                    <span>Add your first <a href="{{ route('leads.index') }}" class="font-medium text-emerald-700 underline">lead</a>.</span>
                 </li>
                 <li class="flex gap-2">
                     <span aria-hidden="true">○</span>
-                    <span>CRM, agents, approvals, proposals and projects are added in later phases and will appear in the menu when they work.</span>
+                    <span>Agents, approvals, proposals and projects are added in later phases and will appear in the menu when they work.</span>
                 </li>
             </ol>
         </section>

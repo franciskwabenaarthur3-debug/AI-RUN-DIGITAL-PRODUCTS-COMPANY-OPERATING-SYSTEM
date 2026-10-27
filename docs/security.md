@@ -9,6 +9,11 @@ This describes controls that are implemented now. Planned controls are listed se
 - **Brute force:** 5 failed attempts per email + IP locks that pair out for 60 seconds (`LOGIN_MAX_ATTEMPTS`), plus a route throttle of 20 requests/minute per IP.
 - **Deactivation:** inactive users cannot log in; an already logged-in user who is deactivated is logged out on the next request.
 - **Authorization:** policies checked server-side in Form Requests and controllers, so direct requests cannot bypass hidden UI. Only founders can change settings or view the audit log.
+- **CRM access:** founders and operators create and change leads and customers; viewers are read-only. Only founders manage service packages and see or change customer billing details. Every rule is checked in policies, and tests send direct requests to prove hidden controls cannot be bypassed.
+- **Customer billing details:** encrypted at rest with `APP_KEY`, excluded from serialization and from audit metadata (audit records note only that billing changed). Rotating `APP_KEY` requires re-encrypting this column.
+- **Mass assignment:** lead status, opt-out and conversion fields, and customer billing details are not fillable; they change only through services.
+- **Opt-out:** an opted-out lead is flagged `do_not_contact`, cannot enter outreach states, and its email/domain cannot be re-entered as a new lead because of the unique constraints.
+- **Search:** user search terms are bound parameters with LIKE wildcards escaped.
 - **Audit:** append-only `audit_logs` (model guard + PostgreSQL trigger). Failed logins store a SHA-256 hash of the attempted email, not the email or password. Keys matching `config('company_os.redacted_keys')` are replaced with `[redacted]` at any nesting depth.
 - **Tracing:** every response carries an `X-Request-Id` (a valid incoming UUID is reused, anything else replaced). It is stored on audit records.
 - **Sessions:** stored in the database and encrypted (`SESSION_ENCRYPT=true`). Set `SESSION_SECURE_COOKIE=true` on HTTPS environments.

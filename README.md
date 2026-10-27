@@ -2,7 +2,7 @@
 
 An AI-assisted operating system for a small digital products company (websites, WordPress work, maintenance, digital products). The founder stays in control: AI agents will work through registered tools, persisted tasks and enforceable approvals, never through unrestricted access.
 
-**Status: Phase 1 (foundation).** What exists today is listed below. Nothing else should be assumed to work yet.
+**Status: Phase 2 (CRM).** What exists today is listed below. Nothing else should be assumed to work yet.
 
 | Area | State |
 | --- | --- |
@@ -11,10 +11,14 @@ An AI-assisted operating system for a small digital products company (websites, 
 | Session login/logout, rate limiting, deactivated-user lockout, no public registration | Done |
 | Roles: founder, operator, viewer | Done |
 | Company settings (currency, timezone, AI budget limit, approval policy, emergency pause flag) | Done; budget and pause are stored but not yet enforced (no agents exist yet) |
-| Service packages table and model | Schema only; management UI is Phase 2 |
+| Service packages: create, edit, deactivate (founder only), prices in minor units | Done |
+| Leads: search, filters, pagination, create/edit, research evidence, activity history, follow-ups | Done |
+| Lead status workflow with enforced transitions, duplicate detection (email + website domain), opt-out | Done |
+| Lead → customer conversion (exactly once) | Done |
+| Customers with encrypted, founder-only billing details | Done |
 | Append-only audit log with secret redaction and correlation ids | Done |
 | Founder dashboard, settings page, audit log page | Done |
-| CRM, agents, approvals, proposals, projects, maintenance, AI gateway | Not started (Phases 2 to 8) |
+| Agents, approvals, proposals, projects, maintenance, AI gateway | Not started (Phases 3 to 8) |
 
 ## Requirements
 
@@ -67,6 +71,7 @@ CI (`.github/workflows/tests.yml`) runs both suites on PHP 8.2 with PostgreSQL 1
 - [Architecture](docs/architecture.md)
 - [Database schema](docs/database-schema.md)
 - [Security](docs/security.md)
+- [Workflows](docs/workflows.md)
 - [Test report](docs/test-report.md)
 
-The remaining documents listed in the master plan (agent policies, workflows, deployment, runbook, backup and recovery, user manual) will be written as the features they describe are built.
+The remaining documents listed in the master plan (agent policies, deployment, runbook, backup and recovery, user manual) will be written as the features they describe are built.

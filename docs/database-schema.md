@@ -31,6 +31,8 @@ Single row, read through `CompanySetting::current()`.
 
 ## service_packages
 
+Managed by founders only. Packages are deactivated rather than deleted so future proposals keep a valid reference.
+
 | Column | Type | Notes |
 | --- | --- | --- |
 | name | string | |
@@ -59,3 +61,52 @@ Append-only. The model throws on update/delete; on PostgreSQL a `BEFORE UPDATE O
 | created_at | timestamp, indexed | no `updated_at` |
 
 Indexes: `(resource_type, resource_id)`, `(actor_type, actor_id)`.
+
+## customers
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| company_name | string | |
+| primary_contact | string, null | |
+| email | string, null, indexed | stored lower-case |
+| phone | string(50), null | |
+| status | string(16), indexed | `active`, `inactive` |
+| billing_details | text, null | encrypted with `APP_KEY` (`encrypted` cast); hidden from serialization; founder-only to view or change |
+
+## leads
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| company_name | string | |
+| contact_name | string, null | |
+| email | string, null, **unique** | stored lower-case; duplicate detection |
+| phone | string(50), null | |
+| website | string(2048), null | as entered |
+| website_domain | string, null, **unique** | normalized host (lower-case, no scheme/port/path/`www.`); duplicate detection |
+| source | string(32) | `manual`, `referral`, `inbound`, `research`, `event` |
+| source_reference | text, null | where the information came from |
+| research_status | string(16) | `pending`, `in_progress`, `complete` |
+| qualification_score | tinyint unsigned, null | 0–100 |
+| status | string(32), indexed | see [workflows](workflows.md) |
+| next_follow_up_at | timestamp, null, indexed | |
+| notes | text, null | |
+| do_not_contact | boolean, indexed | set by opt-out; blocks outreach |
+| opted_out_at, opt_out_reason | timestamp, string(500), null | |
+| customer_id | FK customers, null, **unique**, restrict on delete | set once by conversion |
+| converted_at | timestamp, null | |
+| created_by | FK users, null, null on delete | |
+
+`assigned_agent_id` from the master plan is deferred until the `agents` table exists (Phase 3), so it can be a real foreign key.
+
+## lead_activities
+
+Append-only history (model refuses update/delete). Index `(lead_id, id)`.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| lead_id | FK leads, restrict on delete | |
+| activity_type | string(50) | `created`, `updated`, `status_changed`, `note`, `follow_up_scheduled`, `opted_out`, `converted` |
+| description | text | |
+| actor_type, actor_id | string(32), bigint null | |
+| metadata | json, null | e.g. `{from, to}` for status changes; changed field names for edits |
+| created_at | timestamp | |
