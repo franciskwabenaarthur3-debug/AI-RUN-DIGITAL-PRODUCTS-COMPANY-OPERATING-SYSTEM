@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AgentController;
+use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\CustomerController;
@@ -52,6 +53,11 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::post('accept', 'accept')->name('accept');
         Route::post('reject', 'reject')->name('reject');
     });
+
+    Route::get('approvals', [ApprovalController::class, 'index'])->name('approvals.index');
+    Route::get('approvals/{approval}', [ApprovalController::class, 'show'])->name('approvals.show');
+    Route::post('approvals/{approval}/approve', [ApprovalController::class, 'approve'])->name('approvals.approve');
+    Route::post('approvals/{approval}/reject', [ApprovalController::class, 'reject'])->name('approvals.reject');
 
     Route::get('/audit-log', [AuditLogController::class, 'index'])->name('audit.index');
 });

@@ -70,7 +70,7 @@
                             <li class="border-l-2 border-emerald-600/40 pl-3">
                                 <p class="whitespace-pre-line">{{ $activity->description }}</p>
                                 <p class="text-xs text-zinc-500">
-                                    {{ str_replace('_', ' ', $activity->activity_type) }} · {{ $activity->actor?->name ?? $activity->actor_type }} ·
+                                    {{ str_replace('_', ' ', $activity->activity_type) }} · {{ $activity->actorName() }} ·
                                     <time datetime="{{ $activity->created_at->toIso8601String() }}">{{ $activity->created_at->format('M j, Y H:i') }}</time>
                                 </p>
                             </li>

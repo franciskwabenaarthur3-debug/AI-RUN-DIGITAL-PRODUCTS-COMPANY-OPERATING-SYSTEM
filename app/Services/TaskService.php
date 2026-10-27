@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\TaskStatus;
 use App\Exceptions\InvalidTransition;
 use App\Jobs\RunAgentTask;
+use App\Models\Agent;
 use App\Models\Task;
 use App\Models\User;
 use Closure;
@@ -23,11 +24,11 @@ class TaskService
      * @param  array<string, mixed>  $attributes
      * @param  list<int>  $dependsOn
      */
-    public function create(array $attributes, User $actor, array $dependsOn = []): Task
+    public function create(array $attributes, User|Agent $actor, array $dependsOn = []): Task
     {
         return DB::transaction(function () use ($attributes, $actor, $dependsOn) {
             $task = new Task($attributes);
-            $task->created_by_type = 'user';
+            $task->created_by_type = $actor instanceof Agent ? 'agent' : 'user';
             $task->created_by_id = $actor->id;
             $task->save();
 

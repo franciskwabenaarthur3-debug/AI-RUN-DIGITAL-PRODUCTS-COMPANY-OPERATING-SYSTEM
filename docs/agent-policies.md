@@ -28,8 +28,22 @@ Re-running the seeder never resets a founder's changes to status or permissions.
 
 - The set of tools is fixed in `App\Agents\ToolCatalog`. Agents cannot define new tools; granting a tool name that is not in the catalog is rejected.
 - `Agent::mayUseTool()` returns true only for an explicit, allowed grant. Unknown or ungranted tools are denied.
-- Tools marked L2 (`create_project`, `prepare_release`) will additionally need founder approval for each action.
-- **Not yet built:** the tool gateway that executes tools (Phase 4). Until then agents produce output only; no tool performs any action.
+- Every call goes through `App\Agents\Tools\ToolGateway`; a runtime receives a `ToolInvoker` bound to its run and has no other way to act.
+- The gateway refuses, in order: **prohibited** (Level 3) actions such as `execute_shell`, `run_sql`, `read_secrets`, `grant_permission`, `approve_request`, `transfer_funds`, `issue_refund`, `delete_records`, `deploy_production`, `send_external_message` (refused even if a permission row exists, and audited as `tool.prohibited`); unknown or unimplemented tools; disabled agents; the emergency pause; tools the agent is not granted; calls past `max_tool_calls_per_run`; input that fails the tool's validation rules or has unknown fields.
+- A repeated call with the same input in the same run returns the first execution instead of acting again.
+- Level 2 tools (`create_project`, `prepare_release`) never run directly: the call creates an approval request and waits. It runs only after an active founder approves the exact payload, and then the gateway re-checks the agent's status and permission first. An approval never overrides those gates.
+- Every call, including refusals, is stored in `tool_executions` and audited with the agent as actor.
+
+### Implemented tools
+
+| Tool | What it does | Limits |
+| --- | --- | --- |
+| `create_lead` | Creates a lead with source "research" | `source_reference` required; duplicates (email or domain) fail |
+| `update_lead_status` | Moves a lead through the workflow | Only researched, qualified, outreach drafted, disqualified, lost. Contacted, replied, converted and unsubscribed stay with people |
+| `create_project_task` | Creates a subtask of the current task | Created, not queued; a person queues it |
+| `request_approval` | Asks the founder to decide on an action Company OS cannot perform (send outreach, send proposal, publish release, other) | Approving records the decision only; a person carries out the action |
+
+The other catalog tools can be granted but are refused as unimplemented until they are built.
 
 ## Limits enforced on every run
 
@@ -42,6 +56,7 @@ Re-running the seeder never resets a founder's changes to status or permissions.
 | Agent monthly budget | `agents.monthly_budget_minor` | For paid runtimes: blocked before the run if spent + maximum run cost would exceed it |
 | Company monthly AI budget | Settings → Monthly AI budget | Same check, company-wide. A budget of 0 means no paid runs |
 | Emergency pause | Settings → Operating status | Queued tasks are not started while paused; lifting the pause re-dispatches them |
+| Max tool calls per run | `agents.max_tool_calls_per_run` | Gateway refuses further calls in the run (`tool_call_limit`) |
 | Disabled agent | Agent status | Cannot be queued; a task queued before the agent was disabled is blocked when it reaches the runner |
 
 ## Output
@@ -57,5 +72,5 @@ By default agent results go to **awaiting review**, and a person accepts or reje
 
 ## Runtimes
 
-- `mock` is the only runtime today. It is deterministic, performs no real work and labels its output as mock. It is available only when `AGENTS_ALLOW_MOCK_RUNTIME` is true (default: local and testing only). Elsewhere, tasks for mock agents are blocked with an explanation.
+- `mock` is the only runtime today. It is deterministic, performs no real work and labels its output as mock. Its `use_tool` scenario makes the tool calls listed in the task input (`mock_tool_calls`) through the gateway, so the whole path can be exercised without a model. It is available only when `AGENTS_ALLOW_MOCK_RUNTIME` is true (default: local and testing only). Elsewhere, tasks for mock agents are blocked with an explanation.
 - Real model providers will be added as runtimes behind the AI gateway (Phase 5).

@@ -33,4 +33,16 @@ return [
         'stale_run_grace_seconds' => (int) env('AGENTS_STALE_RUN_GRACE_SECONDS', 60),
     ],
 
+    /*
+    | Approvals.
+    */
+    'approvals' => [
+        // How long a request stays open for a decision, and how long an
+        // approval may wait before execution.
+        'ttl_hours' => (int) env('APPROVALS_TTL_HOURS', 72),
+        // An execution still running after this long is flagged for manual
+        // reconciliation rather than retried.
+        'reconcile_after_minutes' => (int) env('APPROVALS_RECONCILE_AFTER_MINUTES', 30),
+    ],
+
 ];

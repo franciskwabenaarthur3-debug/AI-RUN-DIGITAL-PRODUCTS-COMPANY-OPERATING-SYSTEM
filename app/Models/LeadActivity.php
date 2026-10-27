@@ -34,8 +34,18 @@ class LeadActivity extends Model
         return $this->belongsTo(Lead::class);
     }
 
+    /** The human actor; only meaningful when actor_type is "user". */
     public function actor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'actor_id');
+    }
+
+    public function actorName(): string
+    {
+        return match ($this->actor_type) {
+            'user' => $this->actor?->name ?? 'User #'.$this->actor_id,
+            'agent' => Agent::query()->whereKey($this->actor_id)->value('name') ?? 'Agent #'.$this->actor_id,
+            default => $this->actor_type,
+        };
     }
 }

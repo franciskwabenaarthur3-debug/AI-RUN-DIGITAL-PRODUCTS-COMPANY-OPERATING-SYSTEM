@@ -1,23 +1,25 @@
 # Test report
 
-**Date:** 2026-10-27 · **Branch:** `phase-3-agents`
+**Date:** 2026-10-27 · **Branch:** `phase-4-governance`
 **Environment:** PHP 8.3.6 (CLI), PostgreSQL 16.15, Node 22.22. CI runs PHP 8.2 + PostgreSQL 16.
 
 ## Results
 
 | Suite | Result |
 | --- | --- |
-| `php artisan test` (SQLite in-memory) | 147 passed, 1 skipped (the PostgreSQL-only trigger test) |
-| `php artisan test` (PostgreSQL 16) | 148 passed |
+| `php artisan test` (SQLite in-memory) | 191 passed, 1 skipped (the PostgreSQL-only trigger test) |
+| `php artisan test` (PostgreSQL 16) | 192 passed |
 | `vendor/bin/pint` | passed |
 | `npm run build` | passed |
+| Parallel claim on PostgreSQL: four separate PHP processes executed the same approved request at once, each effect sleeping 2 s | passed: one executed, three refused with `in_progress`, one side effect |
+| Browser (Playwright) with the database queue: founder queues a mock task that calls `create_lead`, `request_approval` and `execute_shell`; `queue:work --once`; task page lists the three tool calls (the last denied as prohibited); dashboard shows one pending approval; approval page shows the exact payload; approve with confirmation | passed |
 | End-to-end with the database queue: log in, enable Sales Agent, create a task, `queue:work --once`, task reaches awaiting review with run history, accept result | passed |
 
 Tests use the `sync` queue driver and the deterministic mock runtime; no test calls a real AI provider.
 
 ## Coverage by area
 
-Phases 1–2 coverage is unchanged (authentication, settings, audit, money, CRM). Added in Phase 3:
+Phases 1–2 coverage is unchanged (authentication, settings, audit, money, CRM). Phase 3 (agents and tasks) is summarised first, then Phase 4.
 
 - **Task state machine:** normal lifecycle; arbitrary jumps refused; terminal states.
 - **Output validation:** non-objects, lists, empty output, missing summary, a "completed action" kind, unknown fields, malformed sources and oversized text rejected; research needs sources or assumptions.
@@ -28,9 +30,16 @@ Phases 1–2 coverage is unchanged (authentication, settings, audit, money, CRM)
 - **Agent management:** seeder creates seven disabled agents and does not overwrite founder changes; ungranted and unknown tools denied; enable requires confirmation and is audited; permissions limited to the catalog and audited; operators and viewers get 403 on every agent change.
 - **Task UI:** create-and-queue from the form; validation; status/result/attempts cannot be injected; accept, reject (reason required), double accept refused; retry and cancel (confirmation required), retry after cancel refused; viewers get 403 on every task action; list filters; dashboard counts; guests redirected.
 
+Added in Phase 4:
+
+- **Approval acceptance cases:** a Level 2 call creates a pending request with snapshot, canonical hash, risk, rollback plan and expiry, and does not run; execution is refused when the approval is missing or pending (a stray job changes nothing); operators, viewers and inactive founders are refused as approvers, and each refusal is audited; rejection (reason required) blocks execution and closes the tool call; an expired request cannot be approved, and an approval that expires before execution blocks it; a modified payload invalidates the approval and cannot reuse it; changed input creates a new request; a snapshot edited directly in the database is detected before approval and before execution; snapshot and decisions are immutable and the database refuses a second decision; replays and duplicate jobs execute once; a second claim during execution is refused (`in_progress`); a failing side effect is recorded as failed and not retried; an approval does not override a disabled agent or revoked permission; the emergency pause holds approved actions until resume; every step is audited; the sweep expires open requests and flags stale executions for reconciliation; request idempotency.
+- **Tool gateway:** prohibited tools refused even with a permission row, and cannot be registered; unknown and unimplemented tools refused; ungranted tools refused; disabled agent and pause refuse calls; invalid input and unknown fields rejected; agent recorded as actor on leads, lead activity and audit; duplicate leads fail cleanly; a repeated call in the same run returns the first execution; per-run call cap; agents limited to their own lead statuses; subtasks created unqueued under the current task; decision-only approval requests; a full agent run calling tools through the runtime; secrets redacted from stored input.
+- **Approval center:** founder sees payload, hash and rollback plan; approval needs confirmation and a second approval is refused; rejection needs a reason; operators and viewers can view but get 403 on decisions; dashboard count; status filter validation.
+
 ## Known limitations
 
 - No real AI provider yet; only the mock runtime exists.
-- Tools are permissioned but not executable until the tool gateway (Phase 4).
-- Concurrency is tested through sequential duplicate deliveries and the unique `(task_id, attempt)` constraint, not with parallel workers.
+- Only four tools are implemented; the other catalog tools are refused as unimplemented.
+- The automated suite tests concurrency through nested and repeated claims and unique constraints; the parallel-process race above was run by hand, not in CI.
+- Approval decisions are immutable through the model and the unique constraint, but have no PostgreSQL trigger yet (audit logs do).
 - No MFA yet. MySQL untested.

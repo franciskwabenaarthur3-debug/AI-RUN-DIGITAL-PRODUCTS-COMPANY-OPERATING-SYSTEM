@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Agent;
 use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -23,10 +24,14 @@ class AuditLogger
         string $action,
         ?Model $resource = null,
         array $metadata = [],
-        ?User $actor = null,
+        User|Agent|null $actor = null,
         string $actorType = 'user',
     ): AuditLog {
-        $actor ??= auth()->user();
+        if ($actor instanceof Agent) {
+            $actorType = 'agent';
+        } elseif ($actorType === 'user') {
+            $actor ??= auth()->user();
+        }
 
         return AuditLog::query()->create([
             'actor_type' => $actor || $actorType !== 'user' ? $actorType : 'system',

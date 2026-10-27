@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\CustomerStatus;
 use App\Enums\LeadStatus;
 use App\Exceptions\InvalidTransition;
+use App\Models\Agent;
 use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\LeadActivity;
@@ -23,11 +24,11 @@ class LeadService
     /**
      * @param  array<string, mixed>  $attributes
      */
-    public function create(array $attributes, User $actor): Lead
+    public function create(array $attributes, User|Agent $actor): Lead
     {
         return DB::transaction(function () use ($attributes, $actor) {
             $lead = new Lead($attributes);
-            $lead->created_by = $actor->id;
+            $lead->created_by = $actor instanceof User ? $actor->id : null;
             $lead->save();
 
             $this->log($lead, 'created', 'Lead created.', $actor, ['source' => $lead->source->value]);
@@ -57,7 +58,7 @@ class LeadService
         });
     }
 
-    public function changeStatus(Lead $lead, LeadStatus $target, User $actor, ?string $reason = null): Lead
+    public function changeStatus(Lead $lead, LeadStatus $target, User|Agent $actor, ?string $reason = null): Lead
     {
         if (! in_array($target, $lead->status->manualTransitions(), true)) {
             throw new InvalidTransition("A lead cannot move from {$lead->status->label()} to {$target->label()}.");
@@ -176,12 +177,12 @@ class LeadService
     /**
      * @param  array<string, mixed>  $metadata
      */
-    private function log(Lead $lead, string $type, string $description, User $actor, array $metadata = []): LeadActivity
+    private function log(Lead $lead, string $type, string $description, User|Agent $actor, array $metadata = []): LeadActivity
     {
         return $lead->activities()->create([
             'activity_type' => $type,
             'description' => $description,
-            'actor_type' => 'user',
+            'actor_type' => $actor instanceof Agent ? 'agent' : 'user',
             'actor_id' => $actor->id,
             'metadata' => $metadata === [] ? null : $metadata,
         ]);
