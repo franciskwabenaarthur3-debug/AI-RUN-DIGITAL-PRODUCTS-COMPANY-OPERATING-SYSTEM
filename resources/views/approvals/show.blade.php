@@ -33,6 +33,8 @@
                                 <a href="{{ route('proposals.show', $approval->resource_id) }}" class="underline">Proposal #{{ $approval->resource_id }}</a>
                             @elseif ($approval->resource_type === 'project_release')
                                 <a href="{{ route('releases.show', $approval->resource_id) }}" class="underline">Release #{{ $approval->resource_id }}</a>
+                            @elseif ($approval->resource_type === 'maintenance_finding' && isset($approval->payload_snapshot['maintenance_task_id']))
+                                <a href="{{ route('maintenance.tasks.show', $approval->payload_snapshot['maintenance_task_id']) }}#finding-{{ $approval->resource_id }}" class="underline">Maintenance finding #{{ $approval->resource_id }}</a>
                             @else
                                 {{ $approval->resource_type }} #{{ $approval->resource_id }}
                             @endif
@@ -52,6 +54,9 @@
                 @endif
                 @if ($approval->action_type === App\Services\ReleaseService::DEPLOY_ACTION)
                     <p class="mt-4 rounded-md bg-sky-50 px-3 py-2 text-xs text-sky-900">Approving lets the founder deploy exactly this version to exactly this URL, once, and record it. Company OS does not deploy it. Every mandatory check is checked again when the deployment is recorded; this approval cannot override a failed check. <a href="{{ route('releases.show', $approval->resource_id) }}" class="underline">Open the release and its check evidence</a>.</p>
+                @endif
+                @if ($approval->action_type === App\Services\MaintenanceService::CHANGE_ACTION)
+                    <p class="mt-4 rounded-md bg-sky-50 px-3 py-2 text-xs text-sky-900">Approving lets a person make exactly this change to exactly this live site, once, and record it. Company OS does not change the site. If the change plan is edited afterwards, this approval no longer applies.</p>
                 @endif
                 @if (str_starts_with($approval->action_type, 'agent.'))
                     <p class="mt-4 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">Approving records your decision only. Company OS does not carry out this action; a person does.</p>

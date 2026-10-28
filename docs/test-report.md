@@ -1,14 +1,15 @@
 # Test report
 
-**Date:** 2026-10-28 · **Branch:** `phase-7-projects`
+**Date:** 2026-10-28 · **Branch:** `phase-8-maintenance`
 **Environment:** PHP 8.3.6 (CLI), PostgreSQL 16.15, Node 22.22. CI runs PHP 8.2 + PostgreSQL 16.
 
 ## Results
 
 | Suite | Result |
 | --- | --- |
-| `php artisan test` (SQLite in-memory) | 299 passed, 1 skipped (the PostgreSQL-only trigger test) |
-| `php artisan test` (PostgreSQL 16) | 300 passed |
+| `php artisan test` (SQLite in-memory) | 322 passed, 1 skipped (the PostgreSQL-only trigger test) |
+| `php artisan test` (PostgreSQL 16) | 323 passed |
+| Browser (Playwright, Phase 8): maintenance list, plan, an in-progress visit with a risky finding awaiting approval, service report, alerts, operating report, AI costs and dashboard at desktop width; visit, reports, alerts and maintenance pages at 390 px with no horizontal scroll | checked by screenshot |
 | Browser (Playwright, Phase 7): a project page and a production release page with a failed mandatory check, at desktop width and at 390 px with no horizontal scroll | checked by screenshot |
 | Browser (Playwright, Phase 6): an approved proposal's page, the new-proposal form at desktop width, and the preview at 390 px with no horizontal scroll | checked by screenshot |
 | `vendor/bin/pint` | passed |
@@ -64,6 +65,16 @@ Added in Phase 7:
 - **Workflow:** status transitions and notes; delivered only from a verified release; closing needs the handover checklist; people complete their own tasks and cannot complete agent tasks; milestones complete only with their tasks done; tasks and deliverables cannot use another project's milestone; deliverable links create versions; project events are append-only.
 - **Pages:** project index and page sections; task page links to its project; viewers read-only and 403 on every change; operators move status, complete tasks, add tasks for people, tick the handover; links with credentials and non-http repository links refused; another project's task cannot be completed through this one (404); out-of-scope feedback opens a change-request proposal; the full staging-to-production release flow through the pages including the approval page; release form validation; dashboard counts and navigation.
 
+Added in Phase 8:
+
+- **Scheduling:** repeated scheduler runs (including one that stopped before moving the plan on) create no duplicate visits, and the next visit is created once a month later; paused plans get none and plans past their term are ended; extra visits are one per day and not in the past; agents schedule through `schedule_maintenance_task`, once per day, with extra fields and past dates refused.
+- **Plans:** only the founder creates plans (service and page); projects must belong to the plan's customer; renewals need a later end date and reactivate an ended plan.
+- **Risky changes:** a risky finding cannot be resolved or its change recorded without approval; the approval is high risk and carries the site URL; editing the change plan after approval invalidates it on recording; asking again works once the old approval is unusable; an approved change is recorded once (confirmation required) and then the visit can close; a rejected change closes the finding with the reason; cancelling a visit invalidates its open approval.
+- **Evidence:** completion needs every checklist result, every finding closed and evidence; a completed visit's evidence, status and findings cannot change and it cannot be deleted; the service report shows them.
+- **Alerts:** a failed health check records a high finding and a warning alert; critical findings raise critical alerts; low findings none; a failed visit raises a critical alert; the sweep flags overdue visits and renewals once, acknowledged alerts are not raised again, and a renewal stops the reminder.
+- **Reports:** counts come from records (leads, accepted proposals and value, plans, overdue visits, contracted prices), with no revenue field, n/a for rates with no data, and revenue listed as not recorded; overdue visits appear in priorities; finished periods are stored once (daily, weekly on Mondays, monthly on the 1st) and the current period is refused; stored reports cannot change; the report tool is read-only.
+- **Pages:** plan created from the project page with prices in minor units; operators cannot edit plans; maintenance, plan, visit, approval (finding link and note), alerts, reports, stored report, costs and dashboard pages render; viewers can read maintenance but get 403 on visit actions, scheduling and reports, and see no priorities on the dashboard.
+
 ## Known limitations
 
 - The Anthropic integration has not been run against the live API from this environment (no key is configured here). Run one small Research task after setting the key before relying on it.
@@ -72,7 +83,8 @@ Added in Phase 7:
 - Mandatory acceptance case 4 (customer record isolation) belongs to the customer portal phase.
 - Release check results are entered by people from their CI or scan reports; Company OS does not read CI or Git, and does not deploy. The health check is a single GET and does not check content.
 - A rollback after delivery is recorded on the release but does not move the project out of delivered.
-- Only seven tools are implemented, plus provider web search; the other catalog tools are refused as unimplemented.
+- Nine tools are implemented, plus provider web search; the other catalog tools are refused as unimplemented.
+- Maintenance work itself (updates, backups, fixes) is done by people with their own tools; Company OS records it and runs only the health check. Alerts are in-app only. Invoices, payments, expenses other than AI usage and hosting costs are not recorded, so reports cannot show verified revenue or profit.
 - The automated suite tests concurrency through nested and repeated claims and unique constraints; the parallel-process race above was run by hand, not in CI.
 - Approval decisions are immutable through the model and the unique constraint, but have no PostgreSQL trigger yet (audit logs do).
 - No MFA yet. MySQL untested.

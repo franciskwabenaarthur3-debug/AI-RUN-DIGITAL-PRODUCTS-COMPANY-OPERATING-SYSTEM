@@ -26,6 +26,11 @@ class ApprovalDecision extends Model
         static::deleting(fn () => throw new LogicException('Approval decisions are immutable.'));
     }
 
+    public function request(): BelongsTo
+    {
+        return $this->belongsTo(ApprovalRequest::class, 'approval_request_id');
+    }
+
     public function approver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approver_user_id');

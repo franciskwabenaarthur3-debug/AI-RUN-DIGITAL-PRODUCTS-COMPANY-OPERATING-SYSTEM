@@ -43,6 +43,9 @@ The app uses conventional Laravel directories, with module boundaries expressed 
 | `app/Jobs/RunAgentTask.php` | Queue wrapper for the runner |
 | `app/Services/AgentService.php` | Founder-only agent status and permission changes |
 | `app/Console/Commands/RecoverStaleRuns.php` | Recovers runs lost by crashed workers |
+| `app/Services/MaintenanceService.php` | Maintenance plans, scheduling, visits, findings and live-change approvals |
+| `app/Services/AlertService.php` | Deduplicated in-app alerts and the hourly sweep |
+| `app/Services/OperatingReportService.php` | Operating reports computed from records; stored snapshots |
 | `config/company_os.php` | Allowed currencies, login throttle, redacted keys, AI model catalog, timeouts and retries |
 
 ## Decisions

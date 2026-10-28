@@ -2,7 +2,7 @@
 
 An AI-assisted operating system for a small digital products company (websites, WordPress work, maintenance, digital products). The founder stays in control: AI agents will work through registered tools, persisted tasks and enforceable approvals, never through unrestricted access.
 
-**Status: Phase 7 (project delivery).** What exists today is listed below. Nothing else should be assumed to work yet.
+**Status: Phase 8 (maintenance and reporting).** What exists today is listed below. Nothing else should be assumed to work yet.
 
 | Area | State |
 | --- | --- |
@@ -32,7 +32,9 @@ An AI-assisted operating system for a small digital products company (websites, 
 | Proposals: drafts from service packages, server-side pricing and discounts, immutable versions, preview, founder approval of the exact version and recipient, send by email (when configured) or record a manual send, delivery result, responses, expiry | Done |
 | Projects: created once from an accepted proposal, milestones and tasks from the package's delivery template, person and agent tasks, deliverables with versions, blockers, staging and repository links, handover checklist, change requests as priced proposals | Done |
 | Releases: staging and production records, mandatory and optional quality checks with evidence, production gated on passed mandatory checks, a verified staging release, the client's approval and the founder's approval of the exact release; deployment recorded by the founder; HTTP health check; rollback record | Done; Company OS records deployments, it does not deploy |
-| Maintenance, reporting | Not started (Phase 8) |
+| Maintenance: founder-priced plans per customer and site, recurring visits created by the scheduler (no duplicates), non-destructive checklists, health check, findings with severity, founder approval of the exact change and rollback plan before any live-site change, completion evidence frozen afterwards, printable service reports, renewal reminders | Done; people do the maintenance work, Company OS records it |
+| Alerts (in-app only): overdue and failed visits, high and critical findings, renewals, failed releases, approvals needing reconciliation, failed agent runs, AI budget | Done; nothing is emailed |
+| Operating reports (daily, weekly, monthly) from recorded data with rule-based advisory priorities, stored for finished periods; AI cost by month, agent and model; dashboard maintenance and alert counts | Done; revenue, expenses, hosting and support are listed as not recorded |
 
 ## Requirements
 
@@ -71,7 +73,7 @@ To let agents use a real model, set `ANTHROPIC_API_KEY` in `.env` (never commit 
 
 Proposals are never emailed unless `PROPOSALS_EMAIL_ENABLED=true` and the `MAIL_*` settings point at a real mail service. Until then the founder sends proposals themselves and records the send in Company OS.
 
-`composer dev` runs the web server, queue worker, log tail and Vite together. Agent tasks run on the queue, so a worker must be running (`php artisan queue:work`), and the scheduler (`php artisan schedule:work` locally, or a cron entry for `schedule:run` in production) recovers runs lost by crashed workers and expires old approval requests.
+`composer dev` runs the web server, queue worker, log tail and Vite together. Agent tasks run on the queue, so a worker must be running (`php artisan queue:work`), and the scheduler (`php artisan schedule:work` locally, or a cron entry for `schedule:run` in production) recovers runs lost by crashed workers, expires old approval requests, creates due maintenance visits, raises alerts and stores operating reports.
 
 ## Tests
 

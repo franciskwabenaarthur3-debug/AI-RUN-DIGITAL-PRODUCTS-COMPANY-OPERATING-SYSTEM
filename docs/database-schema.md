@@ -329,3 +329,35 @@ The project, environment, version, commit, URL, notes and rollback plan cannot c
 ## project_events
 
 Append-only history of a project and its releases (model guard): `event_type`, `actor_type`, `actor_id`, `note`, redacted `metadata` (release events carry `release_id`), `created_at`.
+
+## maintenance_plans
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| customer_id | FK, restrict | an active customer |
+| project_id | FK, null | the site; must belong to the customer |
+| plan_name | string | |
+| billing_frequency, service_interval | string(16) | monthly, quarterly, yearly |
+| amount_minor, currency | bigint, char(3) | the agreed price; not money received |
+| checklist | json | list of check descriptions copied onto each visit |
+| next_service_at | date, null | moved on by the scheduler |
+| term_ends_at | date | renewal reminders count from here |
+| status | string(16), indexed | active, paused, cancelled, ended |
+| notes | text, null | |
+| created_by_user_id | FK | the founder |
+
+## maintenance_tasks
+
+One visit. `maintenance_plan_id`, `project_id`, `title`, `status` (scheduled, in_progress, completed, failed, cancelled), `scheduled_at` (date, unique with the plan, so a visit is never created twice), `checklist` (json: item, result, note), `health_detail` (json), `notes`, `evidence`, `source` (scheduler, user, agent) and `source_id`, `started_at`, `completed_at`, `completed_by_user_id`. Once completed, failed or cancelled it cannot change or be deleted (model guard).
+
+## maintenance_findings
+
+`maintenance_task_id` (cascade), `severity` (low, medium, high, critical), `description`, `recommendation`, `risky`, `status` (open, approval_requested, approved, rejected, resolved, wont_fix), `change_plan`, `rollback_plan`, `approval_request_id` (the current `maintenance.risky_change` approval), `resolution_note`, `resolved_at`, `recorded_by_user_id`. Frozen once its visit closes (model guard).
+
+## alerts
+
+`type`, `severity` (info, warning, critical), `title`, `detail`, `subject_type` and `subject_id` (what it links to), `dedupe_key` (unique: one alert per condition), `acknowledged_at`, `acknowledged_by_user_id`.
+
+## operating_reports
+
+`period` (daily, weekly, monthly), `period_start` (unique with the period), `period_end`, `data` (json, the report as built), `generated_at`. Cannot change or be deleted (model guard).
