@@ -7,7 +7,6 @@ use App\Enums\TaskStatus;
 use App\Exceptions\InvalidTransition;
 use App\Http\Requests\Tasks\StoreTaskRequest;
 use App\Models\Agent;
-use App\Models\CompanySetting;
 use App\Models\Task;
 use App\Models\ToolExecution;
 use App\Services\TaskService;
@@ -96,7 +95,7 @@ class TaskController extends Controller
     {
         $this->authorize('view', $task);
 
-        $currency = CompanySetting::current()->default_currency;
+        $currency = config('company_os.ai.currency');
         $runs = $task->runs()->with('usage')->get();
         $estimated = $runs->flatMap->usage->sum('estimated_cost_minor');
 

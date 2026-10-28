@@ -34,6 +34,11 @@
                 <dt class="text-sm text-zinc-600">AI spend this month (estimated)</dt>
                 <dd class="mt-1 text-lg font-semibold">{{ $aiSpent }}</dd>
                 <dd class="text-xs text-zinc-500">Budget limit {{ $aiBudget }}</dd>
+                @if ($aiAlert)
+                    <dd class="mt-1 text-xs font-medium {{ $aiAlert['level'] === 'exhausted' ? 'text-red-700' : 'text-amber-800' }}">
+                        {{ $aiAlert['level'] === 'exhausted' ? 'Budget used up: paid agent runs are stopped.' : $aiAlert['percent'].'% of the budget used.' }}
+                    </dd>
+                @endif
             </div>
         </dl>
     </section>

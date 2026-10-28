@@ -34,6 +34,59 @@ return [
     ],
 
     /*
+    | AI gateway. Prices are in minor units of `currency` per million tokens,
+    | taken from the provider's published price list on 2026-10-06; check
+    | them against current pricing before relying on cost figures. Costs
+    | recorded from them are estimates, never actual charges.
+    */
+    'ai' => [
+        // Providers bill in USD, so AI budgets and costs are kept in USD.
+        'currency' => 'USD',
+        'request_timeout_seconds' => (int) env('AI_REQUEST_TIMEOUT_SECONDS', 120),
+        // Retries of one model call for transient errors (429, 5xx, network).
+        'max_retries' => (int) env('AI_MAX_RETRIES', 2),
+        // Per-run cap on provider-hosted web searches, and their price per 1,000.
+        'web_search_max_uses' => (int) env('AI_WEB_SEARCH_MAX_USES', 3),
+        'web_search_minor_per_1000' => 1000,
+        'models' => [
+            'claude-opus-5-5' => [
+                'label' => 'Claude Opus 5.5',
+                'provider' => 'anthropic',
+                'model' => 'claude-opus-5-5',
+                'version' => '2026-10-28',
+                'input_minor_per_mtok' => 400,
+                'output_minor_per_mtok' => 2000,
+                'max_output_tokens' => 16000,
+                'effort' => 'medium',
+                'web_search' => true,
+            ],
+            'claude-sonnet-5-5' => [
+                'label' => 'Claude Sonnet 5.5',
+                'provider' => 'anthropic',
+                'model' => 'claude-sonnet-5-5',
+                'version' => '2026-10-28',
+                'input_minor_per_mtok' => 200,
+                'output_minor_per_mtok' => 1000,
+                'max_output_tokens' => 16000,
+                'effort' => 'medium',
+                'web_search' => true,
+            ],
+            'claude-haiku-5-5' => [
+                'label' => 'Claude Haiku 5.5',
+                'provider' => 'anthropic',
+                'model' => 'claude-haiku-5-5',
+                'version' => '2026-10-28',
+                'input_minor_per_mtok' => 10,
+                'output_minor_per_mtok' => 50,
+                'max_output_tokens' => 16000,
+                'effort' => 'medium',
+                // Not enabled: support for the current web search tool on this model is unconfirmed.
+                'web_search' => false,
+            ],
+        ],
+    ],
+
+    /*
     | Approvals.
     */
     'approvals' => [

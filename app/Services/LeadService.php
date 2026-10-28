@@ -105,6 +105,28 @@ class LeadService
     }
 
     /**
+     * Store an outreach draft on the lead's history. Nothing is sent: a
+     * person reviews the draft and sends it outside Company OS.
+     */
+    public function recordOutreachDraft(Lead $lead, string $channel, ?string $subject, string $body, User|Agent $actor): LeadActivity
+    {
+        if (! $lead->canBeContacted()) {
+            throw new InvalidTransition('This contact has opted out; no outreach may be drafted.');
+        }
+
+        return DB::transaction(function () use ($lead, $channel, $subject, $body, $actor) {
+            $activity = $this->log($lead, 'outreach_drafted', "Outreach draft ({$channel}, not sent).", $actor, [
+                'channel' => $channel,
+                'subject' => $subject,
+                'body' => $body,
+            ]);
+            $this->audit->record('lead.outreach_drafted', $lead, ['channel' => $channel, 'activity_id' => $activity->id], actor: $actor);
+
+            return $activity;
+        });
+    }
+
+    /**
      * Record that the contact asked not to be contacted. This is permanent
      * through normal workflows: the lead can no longer enter outreach.
      */

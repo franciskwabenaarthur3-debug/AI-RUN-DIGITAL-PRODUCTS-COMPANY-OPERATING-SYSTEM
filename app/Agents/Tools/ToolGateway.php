@@ -211,6 +211,51 @@ class ToolGateway
         return $this->succeeded($execution, $agent, $result);
     }
 
+    /**
+     * The tools a model may be offered for this agent: implemented,
+     * not prohibited, and granted. Offering is not permission; every call
+     * is still checked by call().
+     *
+     * @return list<Tool>
+     */
+    public function availableTools(Agent $agent): array
+    {
+        return array_values(array_filter(
+            array_map(fn (string $name) => $this->registry->find($name), $this->registry->names()),
+            fn (Tool $tool) => ToolCatalog::exists($tool->name())
+                && ! ToolCatalog::isProhibited($tool->name())
+                && $agent->mayUseTool($tool->name()),
+        ));
+    }
+
+    /**
+     * Record a read-only tool the provider ran on its own side (web
+     * search), so it appears in the run's tool history and the audit log.
+     * The runtime offers such tools only when the agent holds the matching
+     * catalog permission.
+     *
+     * @param  array<string, mixed>  $input
+     */
+    public function recordProviderTool(ToolContext $context, string $catalogTool, array $input, string $provider): ToolExecution
+    {
+        $execution = ToolExecution::query()->create([
+            'agent_run_id' => $context->run?->id,
+            'agent_id' => $context->agent->id,
+            'tool_name' => $catalogTool,
+            'idempotency_key' => 'provider:'.Str::uuid(),
+            'status' => ToolExecutionStatus::Succeeded,
+            'input_hash' => hash('sha256', Payload::canonical($input)),
+            'input_summary' => $this->summarize($input),
+            'result_summary' => ['executed_by' => $provider],
+            'started_at' => now(),
+            'finished_at' => now(),
+        ]);
+
+        $this->audit->record('tool.provider_executed', $execution, ['tool' => $catalogTool, 'provider' => $provider, 'run_id' => $context->run?->id], $context->agent);
+
+        return $execution;
+    }
+
     private function existing(string $name, string $key): ?ToolExecution
     {
         return ToolExecution::query()->where('tool_name', $name)->where('idempotency_key', $key)->first();

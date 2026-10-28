@@ -6,11 +6,13 @@ final class RunResult
 {
     /**
      * @param  list<UsageRecord>  $usage
+     * @param  array<string, scalar>  $metadata  stored on the run, e.g. the model configuration used
      */
     public function __construct(
         public readonly mixed $output,
         public readonly int $steps,
         public readonly array $usage = [],
+        public readonly array $metadata = [],
     ) {}
 
     public function totalTokens(): int

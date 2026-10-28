@@ -33,7 +33,12 @@
                     <div><dt class="text-zinc-500">Results need review</dt><dd>{{ $agent->review_required ? 'Yes' : 'No' }}</dd></div>
                 </dl>
                 @if ($agent->runtime === 'mock')
-                    <p class="mt-4 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">This agent uses the mock runtime, which performs no real work. A model provider is connected in the AI gateway phase.</p>
+                    <p class="mt-4 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">This agent uses the mock runtime, which performs no real work.</p>
+                @elseif (! in_array($agent->runtime, $runtimes, true))
+                    <p class="mt-4 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">The "{{ $agent->runtime }}" runtime is not available here (for the model runtime, set a provider API key). Tasks for this agent are blocked.</p>
+                @endif
+                @if ($agent->runtime === 'llm' && ! $hasInstructions)
+                    <p class="mt-4 rounded-md bg-red-50 px-3 py-2 text-xs text-red-800">No instructions exist for this agent's role and version, so model runs will fail. Instructions are written for the Research and Sales agents.</p>
                 @endif
             </section>
 
@@ -91,9 +96,51 @@
                 </section>
             @endcan
 
+            @can('update', $agent)
+                <section class="card" aria-labelledby="config-heading">
+                    <h2 id="config-heading" class="mb-3 font-semibold">Runtime, model and limits</h2>
+                    <form method="POST" action="{{ route('agents.configuration', $agent) }}" class="space-y-3">
+                        @csrf
+                        @method('PUT')
+                        <div>
+                            <label for="runtime" class="form-label">Runtime</label>
+                            <select id="runtime" name="runtime" class="form-input">
+                                @foreach ($runtimes as $r)
+                                    <option value="{{ $r }}" @selected(old('runtime', $agent->runtime) === $r)>{{ $r === 'llm' ? 'Model (paid)' : ucfirst($r) }}</option>
+                                @endforeach
+                            </select>
+                            @if (! in_array('llm', $runtimes, true))
+                                <p class="mt-1 text-xs text-zinc-500">The model runtime appears once a provider API key is set on the server.</p>
+                            @endif
+                        </div>
+                        <div>
+                            <label for="model_key" class="form-label">Model</label>
+                            <select id="model_key" name="model_key" class="form-input">
+                                <option value="">None</option>
+                                @foreach ($models as $key => $label)
+                                    <option value="{{ $key }}" @selected(old('model_key', $agent->model_key) === $key)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        @foreach (['max_steps' => 'Max steps per run', 'max_tokens_per_run' => 'Max tokens per run', 'max_tool_calls_per_run' => 'Max tool calls per run', 'timeout_seconds' => 'Timeout (seconds)', 'max_retries' => 'Automatic retries'] as $field => $label)
+                            <div>
+                                <label for="{{ $field }}" class="form-label">{{ $label }}</label>
+                                <input id="{{ $field }}" name="{{ $field }}" type="number" min="0" required value="{{ old($field, $agent->$field) }}" class="form-input">
+                            </div>
+                        @endforeach
+                        <div>
+                            <label for="monthly_budget" class="form-label">Monthly budget ({{ config('company_os.ai.currency') }})</label>
+                            <input id="monthly_budget" name="monthly_budget" inputmode="decimal" required value="{{ old('monthly_budget', App\Support\Money::fromMinor($agent->monthly_budget_minor)) }}" class="form-input">
+                            <p class="mt-1 text-xs text-zinc-500">0 allows no paid runs for this agent.</p>
+                        </div>
+                        <button type="submit" class="btn-primary w-full">Save configuration</button>
+                    </form>
+                </section>
+            @endcan
+
             <section class="card" aria-labelledby="tools-heading">
                 <h2 id="tools-heading" class="mb-1 font-semibold">Allowed tools</h2>
-                <p class="mb-3 text-xs text-zinc-500">Tools run through a policy-checked gateway (next phase). Level 2 tools still need founder approval for each action.</p>
+                <p class="mb-3 text-xs text-zinc-500">Every call is checked by the tool gateway. Level 2 tools need founder approval for each action. Tools not built yet are refused even when granted.</p>
                 @can('update', $agent)
                     <form method="POST" action="{{ route('agents.permissions', $agent) }}" class="space-y-2">
                         @csrf

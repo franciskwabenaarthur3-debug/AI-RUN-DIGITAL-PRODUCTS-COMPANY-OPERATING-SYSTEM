@@ -26,6 +26,7 @@ class UpdateCompanySettingsRequest extends FormRequest
             'timezone' => ['required', 'timezone:all'],
             'approval_policy' => ['required', Rule::enum(ApprovalPolicy::class)],
             'monthly_ai_budget' => ['required', 'string', 'regex:/^\d{1,13}(\.\d{1,2})?$/'],
+            'ai_budget_alert_percent' => ['sometimes', 'integer', 'between:1,100'],
             'operating_status' => ['required', Rule::enum(OperatingStatus::class)],
         ];
     }

@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Agents\AgentInstructions;
+use App\Agents\Runtime\RuntimeRegistry;
 use App\Agents\ToolCatalog;
+use App\Ai\ModelCatalog;
 use App\Enums\AgentRunStatus;
 use App\Enums\AgentStatus;
 use App\Models\Agent;
-use App\Models\CompanySetting;
 use App\Services\AgentService;
 use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
@@ -31,7 +33,7 @@ class AgentController extends Controller
 
         return view('agents.index', [
             'agents' => $agents,
-            'currency' => CompanySetting::current()->default_currency,
+            'currency' => config('company_os.ai.currency'),
         ]);
     }
 
@@ -43,7 +45,7 @@ class AgentController extends Controller
         $usage = $agent->usage()->where('created_at', '>=', now()->startOfMonth())
             ->selectRaw('COUNT(*) as calls, COALESCE(SUM(input_tokens + output_tokens), 0) as tokens, COALESCE(SUM(estimated_cost_minor), 0) as estimated, SUM(actual_cost_minor) as actual')
             ->first();
-        $currency = CompanySetting::current()->default_currency;
+        $currency = config('company_os.ai.currency');
 
         return view('agents.show', [
             'agent' => $agent,
@@ -53,6 +55,10 @@ class AgentController extends Controller
             'usage' => $usage,
             'spent' => Money::format($agent->spentThisMonthMinor(), $currency),
             'budget' => Money::format($agent->monthly_budget_minor, $currency),
+            'runtimes' => app(RuntimeRegistry::class)->names(),
+            'models' => app(ModelCatalog::class)->options(),
+            'model' => app(ModelCatalog::class)->find($agent->model_key),
+            'hasInstructions' => AgentInstructions::load($agent) !== null,
         ]);
     }
 
@@ -67,6 +73,26 @@ class AgentController extends Controller
         $agents->setStatus($agent, AgentStatus::from($data['status']), $request->user());
 
         return back()->with('status', "{$agent->name} is now {$data['status']}.");
+    }
+
+    public function updateConfiguration(Request $request, Agent $agent, AgentService $agents, RuntimeRegistry $runtimes, ModelCatalog $models): RedirectResponse
+    {
+        $this->authorize('update', $agent);
+        $data = $request->validate([
+            'runtime' => ['required', Rule::in($runtimes->names())],
+            'model_key' => ['nullable', Rule::in($models->keys()), 'required_if:runtime,llm'],
+            'max_steps' => ['required', 'integer', 'between:1,50'],
+            'max_retries' => ['required', 'integer', 'between:0,5'],
+            'timeout_seconds' => ['required', 'integer', 'between:10,900'],
+            'max_tokens_per_run' => ['required', 'integer', 'between:1000,1000000'],
+            'max_tool_calls_per_run' => ['required', 'integer', 'between:0,100'],
+            'monthly_budget' => ['required', 'string', 'regex:/^\d{1,10}(\.\d{1,2})?$/'],
+        ], ['monthly_budget.regex' => 'Enter a non-negative amount with at most two decimals.']);
+
+        $data['monthly_budget_minor'] = Money::toMinor($data['monthly_budget']);
+        $agents->configure($agent, $data, $request->user());
+
+        return back()->with('status', 'Configuration saved.');
     }
 
     public function updatePermissions(Request $request, Agent $agent, AgentService $agents): RedirectResponse

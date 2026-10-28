@@ -11,5 +11,7 @@ final class UsageRecord
         public readonly int $outputTokens,
         public readonly int $estimatedCostMinor,
         public readonly string $currency,
+        public readonly ?string $providerRequestId = null,
+        public readonly int $webSearchRequests = 0,
     ) {}
 }

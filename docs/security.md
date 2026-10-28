@@ -21,12 +21,12 @@ This describes controls that are implemented now. Planned controls are listed se
 - **Tracing:** every response carries an `X-Request-Id` (a valid incoming UUID is reused, anything else replaced). It is stored on audit records.
 - **Sessions:** stored in the database and encrypted (`SESSION_ENCRYPT=true`). Set `SESSION_SECURE_COOKIE=true` on HTTPS environments.
 - **Files:** the local disk's signed-URL serving route is disabled (`serve => false`).
+- **AI provider:** the API key is read from `ANTHROPIC_API_KEY` only, never stored in the database or logs; provider error messages are shortened and authentication errors never include provider text. Task content, tool results and web content are marked as untrusted data in prompts, but no control depends on that: the model cannot change permissions, approve anything or exceed limits, because those are enforced in code. Model output is accepted only through the `submit_result` tool and validated against the output schema; tool calls are validated by the gateway. Lead email addresses and phone numbers are not sent to the provider. No sending tool exists.
 - **Secrets:** none in source; `.env` is git-ignored and `.env.example` holds keys only.
 
 ## Planned (not implemented yet)
 
 - MFA for founder accounts (before the first pilot).
-- AI provider adapter (Phase 5).
 - Database-level immutability trigger for approval decisions (today: model guard plus the unique constraint).
 - SSRF protection for website-reading tools (with the first such tool).
 - Security headers / CSP middleware, upload validation, retention policies.

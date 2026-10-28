@@ -26,7 +26,8 @@ Single row, read through `CompanySetting::current()`.
 | default_currency | char(3) | from `config('company_os.currencies')` |
 | timezone | string(64) | IANA identifier |
 | approval_policy | string(32) | `strict` only for now |
-| monthly_ai_budget_minor | bigint | minor units of `default_currency` |
+| monthly_ai_budget_minor | bigint | US cents (`config('company_os.ai.currency')`) |
+| ai_budget_alert_percent | tinyint, default 80 | dashboard warning and audit at this share of the budget |
 | operating_status | string(16) | `active` or `paused` (emergency pause) |
 
 ## service_packages
@@ -177,7 +178,9 @@ Composite primary key `(task_id, depends_on_task_id)`, both FK tasks, cascade.
 | agent_run_id, agent_id | FK, restrict | |
 | provider, model | string | |
 | input_tokens, output_tokens | unsigned int | |
-| estimated_cost_minor | bigint | from the runtime |
+| estimated_cost_minor | bigint | from reported tokens and searches at catalog prices |
+| provider_request_id | string(128), null | the provider's message id, for tracing |
+| web_search_requests | unsigned int, default 0 | provider web searches billed in the call |
 | actual_cost_minor | bigint, null | from provider billing only; never estimated |
 | currency | char(3) | |
 | created_at | timestamp, indexed | index `(agent_id, created_at)` for monthly sums |

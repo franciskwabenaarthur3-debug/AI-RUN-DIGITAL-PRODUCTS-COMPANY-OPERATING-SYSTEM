@@ -39,12 +39,20 @@
                 </div>
             </div>
 
-            <div>
-                <label for="monthly_ai_budget" class="form-label">Monthly AI budget ({{ $settings->default_currency }})</label>
-                <input id="monthly_ai_budget" name="monthly_ai_budget" type="text" inputmode="decimal" required
-                       value="{{ old('monthly_ai_budget', $budget) }}" class="form-input" aria-describedby="budget-help">
-                <p id="budget-help" class="mt-1 text-xs text-zinc-500">Hard limit for model spending. Enforcement is added with the AI gateway.</p>
-                @error('monthly_ai_budget') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                    <label for="monthly_ai_budget" class="form-label">Monthly AI budget ({{ config('company_os.ai.currency') }})</label>
+                    <input id="monthly_ai_budget" name="monthly_ai_budget" type="text" inputmode="decimal" required
+                           value="{{ old('monthly_ai_budget', $budget) }}" class="form-input" aria-describedby="budget-help">
+                    <p id="budget-help" class="mt-1 text-xs text-zinc-500">Hard limit on estimated model spending. Model providers bill in {{ config('company_os.ai.currency') }}. A paid run is refused if it could take spending over this amount; 0 allows no paid runs.</p>
+                    @error('monthly_ai_budget') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label for="ai_budget_alert_percent" class="form-label">Warn at (% of AI budget)</label>
+                    <input id="ai_budget_alert_percent" name="ai_budget_alert_percent" type="number" min="1" max="100" required
+                           value="{{ old('ai_budget_alert_percent', $settings->ai_budget_alert_percent) }}" class="form-input">
+                    @error('ai_budget_alert_percent') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+                </div>
             </div>
 
             <div>

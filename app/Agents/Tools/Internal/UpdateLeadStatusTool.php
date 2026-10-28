@@ -41,6 +41,20 @@ class UpdateLeadStatusTool extends BaseTool
         ];
     }
 
+    public function inputSchema(): array
+    {
+        return [
+            'type' => 'object',
+            'properties' => [
+                'lead_id' => ['type' => 'integer'],
+                'status' => ['type' => 'string', 'enum' => array_map(fn ($s) => $s->value, self::AGENT_STATUSES)],
+                'reason' => ['type' => 'string', 'maxLength' => 500],
+            ],
+            'required' => ['lead_id', 'status', 'reason'],
+            'additionalProperties' => false,
+        ];
+    }
+
     public function resource(array $input): array
     {
         return ['lead', (int) $input['lead_id']];
