@@ -8,6 +8,7 @@ use App\Enums\ProjectStatus;
 use App\Exceptions\InvalidTransition;
 use App\Http\Requests\Projects\ProjectRequest;
 use App\Models\Agent;
+use App\Models\MaintenancePlan;
 use App\Models\Project;
 use App\Models\ProjectDeliverable;
 use App\Models\ProjectMilestone;
@@ -56,6 +57,7 @@ class ProjectController extends Controller
             'project' => $project,
             'unplannedTasks' => $project->tasks()->whereNull('milestone_id')->with(['agent:id,name', 'assignee:id,name'])->get(),
             'changeRequests' => Proposal::query()->where('project_id', $project->id)->latest('id')->get(),
+            'maintenancePlans' => MaintenancePlan::query()->where('project_id', $project->id)->latest('id')->get(),
             'productionProblems' => $project->releases->mapWithKeys(fn ($r) => [$r->id => $r->isProduction() ? $releases->productionProblems($r) : []]),
             'people' => User::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'agents' => Agent::query()->orderBy('name')->get(['id', 'name']),

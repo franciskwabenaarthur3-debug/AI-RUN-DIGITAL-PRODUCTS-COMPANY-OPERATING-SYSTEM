@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AgentController;
+use App\Http\Controllers\AlertController;
 use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\SessionController;
@@ -8,9 +9,12 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LeadActionController;
 use App\Http\Controllers\LeadController;
+use App\Http\Controllers\MaintenancePlanController;
+use App\Http\Controllers\MaintenanceTaskController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\ReleaseController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ServicePackageController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TaskController;
@@ -78,6 +82,40 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::post('rollback', 'rollback')->name('rollback');
         Route::post('cancel', 'cancel')->name('cancel');
     });
+
+    Route::prefix('maintenance')->name('maintenance.')->group(function () {
+        Route::get('/', [MaintenancePlanController::class, 'index'])->name('index');
+        Route::get('plans/create', [MaintenancePlanController::class, 'create'])->name('plans.create');
+        Route::post('plans', [MaintenancePlanController::class, 'store'])->name('plans.store');
+        Route::get('plans/{plan}', [MaintenancePlanController::class, 'show'])->name('plans.show');
+        Route::get('plans/{plan}/edit', [MaintenancePlanController::class, 'edit'])->name('plans.edit');
+        Route::put('plans/{plan}', [MaintenancePlanController::class, 'update'])->name('plans.update');
+        Route::post('plans/{plan}/status', [MaintenancePlanController::class, 'status'])->name('plans.status');
+        Route::post('plans/{plan}/renew', [MaintenancePlanController::class, 'renew'])->name('plans.renew');
+        Route::post('plans/{plan}/schedule', [MaintenancePlanController::class, 'schedule'])->name('plans.schedule');
+
+        Route::get('tasks/{task}', [MaintenanceTaskController::class, 'show'])->name('tasks.show');
+        Route::get('tasks/{task}/report', [MaintenanceTaskController::class, 'report'])->name('tasks.report');
+        Route::prefix('tasks/{task}')->name('tasks.')->controller(MaintenanceTaskController::class)->scopeBindings()->group(function () {
+            Route::post('start', 'start')->name('start');
+            Route::post('checklist', 'checklist')->name('checklist');
+            Route::post('health-check', 'healthCheck')->name('health-check');
+            Route::post('findings', 'finding')->name('findings.store');
+            Route::post('findings/{finding}/resolve', 'resolveFinding')->name('findings.resolve');
+            Route::post('findings/{finding}/request-change', 'requestChange')->name('findings.request-change');
+            Route::post('findings/{finding}/record-change', 'recordChange')->name('findings.record-change');
+            Route::post('complete', 'complete')->name('complete');
+            Route::post('fail', 'fail')->name('fail');
+            Route::post('cancel', 'cancel')->name('cancel');
+        });
+    });
+
+    Route::get('alerts', [AlertController::class, 'index'])->name('alerts.index');
+    Route::post('alerts/{alert}/acknowledge', [AlertController::class, 'acknowledge'])->name('alerts.acknowledge');
+
+    Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('reports/costs', [ReportController::class, 'costs'])->name('reports.costs');
+    Route::get('reports/{report}', [ReportController::class, 'show'])->name('reports.show');
 
     Route::get('agents', [AgentController::class, 'index'])->name('agents.index');
     Route::get('agents/{agent}', [AgentController::class, 'show'])->name('agents.show');

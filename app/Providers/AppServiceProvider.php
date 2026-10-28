@@ -9,13 +9,16 @@ use App\Agents\Tools\Internal\CreateLeadTool;
 use App\Agents\Tools\Internal\CreateProjectTaskTool;
 use App\Agents\Tools\Internal\DraftOutreachTool;
 use App\Agents\Tools\Internal\DraftProposalTool;
+use App\Agents\Tools\Internal\GenerateOperatingReportTool;
 use App\Agents\Tools\Internal\RequestApprovalTool;
+use App\Agents\Tools\Internal\ScheduleMaintenanceTaskTool;
 use App\Agents\Tools\Internal\UpdateLeadStatusTool;
 use App\Agents\Tools\Internal\ValidateProposalTool;
 use App\Agents\Tools\ToolRegistry;
 use App\Ai\ModelCatalog;
 use App\Ai\Providers\AnthropicProvider;
 use App\Events\ApprovalDecided;
+use App\Services\MaintenanceService;
 use App\Services\ProposalService;
 use App\Services\ReleaseService;
 use Illuminate\Support\Facades\Event;
@@ -49,6 +52,8 @@ class AppServiceProvider extends ServiceProvider
             $app->make(DraftOutreachTool::class),
             $app->make(DraftProposalTool::class),
             $app->make(ValidateProposalTool::class),
+            $app->make(ScheduleMaintenanceTaskTool::class),
+            $app->make(GenerateOperatingReportTool::class),
         ]));
     }
 
@@ -56,5 +61,6 @@ class AppServiceProvider extends ServiceProvider
     {
         Event::listen(ApprovalDecided::class, [ProposalService::class, 'onApprovalDecided']);
         Event::listen(ApprovalDecided::class, [ReleaseService::class, 'onApprovalDecided']);
+        Event::listen(ApprovalDecided::class, [MaintenanceService::class, 'onApprovalDecided']);
     }
 }

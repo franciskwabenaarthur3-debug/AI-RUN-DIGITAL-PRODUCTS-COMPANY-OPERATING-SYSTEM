@@ -1,6 +1,6 @@
 # Operations runbook
 
-Covers what exists today. Deployment, backup and alerting procedures will be added with those phases.
+Covers what exists today. Deployment and backup procedures will be added with those phases.
 
 ## Processes that must run
 
@@ -8,7 +8,7 @@ Covers what exists today. Deployment, backup and alerting procedures will be add
 | --- | --- | --- |
 | Web | `php artisan serve` locally; PHP-FPM behind a web server in production | The app |
 | Queue worker | `php artisan queue:work --tries=1 --timeout=900` | Runs agent tasks (`RunAgentTask`) and approved tool calls (`ExecuteApprovedAction`). Use a process manager (e.g. Supervisor) to restart it |
-| Scheduler | cron: `* * * * * php /path/to/artisan schedule:run` (locally `php artisan schedule:work`) | Runs `company-os:recover-stale-runs` and `company-os:expire-approvals` every five minutes and `company-os:expire-proposals` hourly |
+| Scheduler | cron: `* * * * * php /path/to/artisan schedule:run` (locally `php artisan schedule:work`) | Runs `company-os:recover-stale-runs` and `company-os:expire-approvals` every five minutes, `company-os:expire-proposals` and `company-os:raise-alerts` hourly, `company-os:generate-reports` daily at 00:30 and `company-os:schedule-maintenance` daily at 01:00 |
 
 `--tries=1` matters: the task runner decides retries itself, so the queue must not retry jobs on its own.
 
@@ -67,6 +67,19 @@ Blocked tasks carry the reason in their failure message (disabled agent, unavail
 - **Health check redirected:** the check does not follow redirects. Use the final URL (often `https://` or `www.`) in a new release.
 - **A production release went wrong:** follow its rollback plan with your own tools, then record the rollback on the release page. Fix, create a new version, and go through staging and approval again.
 - **Record a deployment that needs reconciliation:** the approval shows needs reconciliation if the request died while recording. Check the site; if it was deployed, request approval again and record it with a note saying so.
+
+## Maintenance
+
+- **Visits:** the scheduler creates each plan's next visit `MAINTENANCE_SCHEDULE_AHEAD_DAYS` (default 7) before its service date and moves the plan on by its interval. Running it again, or twice at once, creates nothing new (row lock plus a unique plan and date). A plan whose term has ended is marked ended instead. Extra visits can be scheduled from the plan page or by an agent with `schedule_maintenance_task`.
+- **Doing a visit:** start it, record a result for every checklist item (an issue needs a note), run the health check if the site has a production URL, and record findings. Checks must not change the site. Anything that changes the live site or costs the client extra is a risky finding: request approval with the exact change and rollback plan, wait for the founder, make the change with your own tools, then record it. Complete the visit with evidence; it cannot change afterwards. The service report is on the visit page.
+- **An approved change was refused when recording it:** the change plan, rollback plan or finding changed after approval, or the approval expired. Request approval again.
+- **The visit cannot be done:** mark it failed with the reason; this raises a critical alert. Schedule a new visit when possible.
+- **Renewals:** active plans whose term ends within `MAINTENANCE_RENEWAL_REMINDER_DAYS` (default 30) raise a renewal alert and are counted on the dashboard. Agree the renewal with the client, then the founder records it with the evidence. Invoicing is outside Company OS.
+
+## Alerts and reports
+
+- **Alerts** are raised by the hourly sweep and by maintenance actions, one per condition, and shown on the Alerts page and in the menu badge. Acknowledging hides an alert; the same condition does not raise it again. Nothing is emailed, so check the page daily.
+- **Reports** are computed from Company OS records only. The Reports page shows the current period live; the scheduled job stores yesterday's report every day, last week's on Mondays and last month's on the 1st, once. Paid invoices, expenses other than AI usage, hosting costs and support issues are not recorded, so they are listed as not reported rather than estimated. Recommended priorities come from fixed rules and are advisory.
 
 ## Approvals needing reconciliation
 

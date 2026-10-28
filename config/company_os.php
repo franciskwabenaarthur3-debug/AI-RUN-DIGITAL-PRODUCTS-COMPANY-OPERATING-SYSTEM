@@ -136,6 +136,25 @@ return [
     ],
 
     /*
+    | Maintenance plans and visits.
+    */
+    'maintenance' => [
+        // Checklist a new plan starts with. Every item is a non-destructive check.
+        'default_checklist' => [
+            'Confirm a recent backup exists and note where it is',
+            'Check the site loads (health check)',
+            'Check the SSL certificate expiry date',
+            'Review available core, theme and plugin updates (do not apply on the live site without approval)',
+            'Test the contact form and key pages',
+            'Review uptime and error logs',
+        ],
+        // Visits are created this many days before they are due.
+        'schedule_ahead_days' => (int) env('MAINTENANCE_SCHEDULE_AHEAD_DAYS', 7),
+        // Renewal reminders start this many days before a plan's term ends.
+        'renewal_reminder_days' => (int) env('MAINTENANCE_RENEWAL_REMINDER_DAYS', 30),
+    ],
+
+    /*
     | Approvals.
     */
     'approvals' => [

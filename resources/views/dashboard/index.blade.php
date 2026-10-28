@@ -27,6 +27,16 @@
                 <dd class="text-xs {{ $overdueMilestones > 0 ? 'font-medium text-red-700' : 'text-zinc-500' }}">{{ $overdueMilestones }} overdue {{ Str::plural('milestone', $overdueMilestones) }} · {{ $releasesAwaitingApproval }} {{ Str::plural('release', $releasesAwaitingApproval) }} awaiting approval</dd>
             </div>
             <div class="card">
+                <dt class="text-sm text-zinc-600">Maintenance visits due (7 days)</dt>
+                <dd class="mt-1 text-lg font-semibold {{ $visitsOverdue > 0 ? 'text-red-700' : '' }}"><a href="{{ route('maintenance.index') }}" class="hover:underline">{{ $visitsDue }}</a></dd>
+                <dd class="text-xs {{ $visitsOverdue > 0 ? 'font-medium text-red-700' : 'text-zinc-500' }}">{{ $visitsOverdue }} overdue · {{ $activePlans }} active {{ Str::plural('plan', $activePlans) }} · {{ $renewalsDue }} {{ Str::plural('renewal', $renewalsDue) }} due</dd>
+            </div>
+            <div class="card">
+                <dt class="text-sm text-zinc-600">Open alerts</dt>
+                <dd class="mt-1 text-lg font-semibold {{ ($openAlerts['critical'] ?? 0) > 0 ? 'text-red-700' : (($openAlerts->sum()) > 0 ? 'text-amber-700' : '') }}"><a href="{{ route('alerts.index') }}" class="hover:underline">{{ $openAlerts->sum() }}</a></dd>
+                <dd class="text-xs text-zinc-500">{{ $openAlerts['critical'] ?? 0 }} critical · {{ $openAlerts['warning'] ?? 0 }} warning · {{ $openAlerts['info'] ?? 0 }} info</dd>
+            </div>
+            <div class="card">
                 <dt class="text-sm text-zinc-600">Active customers</dt>
                 <dd class="mt-1 text-lg font-semibold"><a href="{{ route('customers.index', ['status' => 'active']) }}" class="hover:underline">{{ $customerCount }}</a></dd>
             </div>
@@ -76,6 +86,21 @@
         @endif
     </section>
 
+    @if ($priorities !== null)
+        <section aria-labelledby="priorities" class="card mb-8">
+            <div class="mb-3 flex items-center justify-between">
+                <h2 id="priorities" class="font-semibold">Recommended priorities</h2>
+                <a href="{{ route('reports.index', ['period' => 'daily']) }}" class="text-sm font-medium text-emerald-700 underline">Today's report</a>
+            </div>
+            @if ($priorities)
+                <ol class="list-decimal space-y-1 pl-5 text-sm">@foreach ($priorities as $p)<li>{{ $p }}</li>@endforeach</ol>
+            @else
+                <p class="text-sm text-zinc-600">Nothing needs attention by the report's rules.</p>
+            @endif
+            <p class="mt-2 text-xs text-zinc-500">Advisory, from fixed rules over recorded data.</p>
+        </section>
+    @endif
+
     <div class="grid gap-6 lg:grid-cols-2">
         <section aria-labelledby="getting-started" class="card">
             <h2 id="getting-started" class="mb-3 font-semibold">Getting started</h2>
@@ -93,8 +118,8 @@
                     <span>Add your first <a href="{{ route('leads.index') }}" class="font-medium text-emerald-700 underline">lead</a>.</span>
                 </li>
                 <li class="flex gap-2">
-                    <span aria-hidden="true">○</span>
-                    <span>Projects, delivery and maintenance are added in later phases and will appear in the menu when they work.</span>
+                    <span aria-hidden="true">{{ $activePlans > 0 ? '✓' : '○' }}</span>
+                    <span>Offer a <a href="{{ route('maintenance.index') }}" class="font-medium text-emerald-700 underline">maintenance plan</a> once a project is live.</span>
                 </li>
             </ol>
         </section>

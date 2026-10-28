@@ -377,6 +377,22 @@
                 @endif
             @endcan
 
+            <section class="card" aria-labelledby="maintenance-heading">
+                <h2 id="maintenance-heading" class="mb-2 font-semibold">Maintenance</h2>
+                @if ($maintenancePlans->isEmpty())
+                    <p class="text-sm text-zinc-600">No maintenance plan for this project.</p>
+                @else
+                    <ul class="space-y-1 text-sm">
+                        @foreach ($maintenancePlans as $plan)
+                            <li class="flex flex-wrap items-center justify-between gap-2"><a href="{{ route('maintenance.plans.show', $plan) }}" class="text-emerald-700 underline">{{ $plan->plan_name }}</a> <x-status-badge :status="$plan->status" /></li>
+                        @endforeach
+                    </ul>
+                @endif
+                @can('create', App\Models\MaintenancePlan::class)
+                    <a href="{{ route('maintenance.plans.create', ['project_id' => $project->id]) }}" class="btn-secondary mt-3 w-full">Offer a maintenance plan</a>
+                @endcan
+            </section>
+
             <section class="card" aria-labelledby="handover-heading" id="handover">
                 <h2 id="handover-heading" class="mb-3 font-semibold">Handover checklist</h2>
                 <ul class="space-y-2 text-sm">

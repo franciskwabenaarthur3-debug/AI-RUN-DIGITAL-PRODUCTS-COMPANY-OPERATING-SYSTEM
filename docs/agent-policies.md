@@ -44,6 +44,8 @@ Re-running the seeder never resets a founder's changes to status or permissions.
 | `draft_outreach` | Stores an outreach draft (channel, subject, body) on a lead's activity history | Refused for leads that are opted out or closed. Nothing is sent: a person sends it, after an approval if the agent asks for one |
 | `draft_proposal` | Creates a draft proposal for a lead or customer from an active package | The agent gives only the package, title and introduction. Price, scope, exclusions and recipient come from records; extra fields are refused. Opted-out leads are refused. People submit and send |
 | `validate_proposal` | Lists what would stop a proposal being submitted or sent | Read-only |
+| `schedule_maintenance_task` | Schedules an extra visit on an active maintenance plan | Today or later, within a year, one visit per plan per day. The visit is only scheduled: people carry it out, and live-site changes still need the founder's approval |
+| `generate_operating_report` | Returns the daily, weekly or monthly operating report for the current period | Read-only; computed from records, stores nothing |
 | `request_approval` | Asks the founder to decide on an action Company OS cannot perform (send outreach, publish release, other) | Approving records the decision only; a person carries out the action |
 
 `search_prospects` has no internal implementation. On the `llm` runtime it controls the provider's web search: search is offered to the model only when the agent is granted `search_prospects` and the model supports it, at most `AI_WEB_SEARCH_MAX_USES` searches per call. Each search is recorded as a `search_prospects` tool execution with the query and `executed_by: anthropic`.
