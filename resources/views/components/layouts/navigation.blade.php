@@ -3,6 +3,7 @@
     <x-nav-link route="leads.index" active="leads.*">Leads</x-nav-link>
     <x-nav-link route="customers.index" active="customers.*">Customers</x-nav-link>
     <x-nav-link route="proposals.index" active="proposals.*">Proposals</x-nav-link>
+    <x-nav-link route="projects.index" active="projects.*,releases.*">Projects</x-nav-link>
     <x-nav-link route="service-packages.index" active="service-packages.*">Service packages</x-nav-link>
     <x-nav-link route="tasks.index" active="tasks.*">Tasks</x-nav-link>
     <x-nav-link route="agents.index" active="agents.*">Agents</x-nav-link>

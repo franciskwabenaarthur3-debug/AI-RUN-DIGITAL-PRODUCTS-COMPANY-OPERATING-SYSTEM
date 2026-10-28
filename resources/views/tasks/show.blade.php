@@ -15,6 +15,12 @@
                 <h2 id="details" class="mb-4 font-semibold">Details</h2>
                 <dl class="grid gap-4 text-sm sm:grid-cols-3">
                     <div><dt class="text-zinc-500">Agent</dt><dd>@if ($task->agent)<a href="{{ route('agents.show', $task->agent) }}" class="underline">{{ $task->agent->name }}</a>@else — @endif</dd></div>
+                    @if ($task->assignee)
+                        <div><dt class="text-zinc-500">Person</dt><dd>{{ $task->assignee->name }}</dd></div>
+                    @endif
+                    @if ($task->project)
+                        <div><dt class="text-zinc-500">Project</dt><dd><a href="{{ route('projects.show', $task->project) }}#milestones" class="underline">{{ $task->project->name }}</a>{{ $task->milestone ? ' · '.$task->milestone->name : '' }}</dd></div>
+                    @endif
                     <div><dt class="text-zinc-500">Priority</dt><dd>{{ $task->priority->label() }}</dd></div>
                     <div><dt class="text-zinc-500">Due</dt><dd>{{ $task->due_at?->format('M j, Y H:i') ?? '—' }}</dd></div>
                     <div><dt class="text-zinc-500">Created by</dt><dd>{{ $task->creatorName() }}</dd></div>
@@ -126,7 +132,9 @@
 
         @can('operate', $task)
             <aside class="space-y-6" aria-label="Actions">
-                @if ($task->status === $S::Created)
+                @if ($task->status === $S::Created && ! $task->agent_id && $task->project)
+                    <p class="card text-sm text-zinc-600">A person does this task. Mark it done on the <a href="{{ route('projects.show', $task->project) }}#milestones" class="text-emerald-700 underline">project page</a>.</p>
+                @elseif ($task->status === $S::Created)
                     <section class="card">
                         <h2 class="mb-3 font-semibold">Start</h2>
                         <form method="POST" action="{{ route('tasks.queue', $task) }}">@csrf<button type="submit" class="btn-primary w-full">Queue task</button></form>

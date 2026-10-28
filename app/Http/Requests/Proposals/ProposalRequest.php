@@ -34,6 +34,7 @@ class ProposalRequest extends FormRequest
         return [
             'lead_id' => $creating ? ['nullable', 'integer', Rule::exists('leads', 'id'), 'required_without:customer_id', 'prohibits:customer_id'] : ['prohibited'],
             'customer_id' => $creating ? ['nullable', 'integer', Rule::exists('customers', 'id'), 'required_without:lead_id'] : ['prohibited'],
+            'project_id' => $creating ? ['nullable', 'integer', Rule::exists('projects', 'id')] : ['prohibited'],
             'service_package_id' => $creating ? ['required', 'integer', Rule::exists('service_packages', 'id')->where('is_active', true)] : ['prohibited'],
             'title' => ['required', 'string', 'max:200'],
             'recipient_name' => ['nullable', 'string', 'max:150'],
@@ -104,7 +105,7 @@ class ProposalRequest extends FormRequest
             $out['exclusions'] = $lines($data['exclusions'] ?? '');
         }
 
-        foreach (['lead_id', 'customer_id', 'service_package_id'] as $key) {
+        foreach (['lead_id', 'customer_id', 'project_id', 'service_package_id'] as $key) {
             if (array_key_exists($key, $data)) {
                 $out[$key] = $data[$key] === null ? null : (int) $data[$key];
             }

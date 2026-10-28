@@ -22,6 +22,11 @@
                 <dd class="text-xs text-zinc-500"><a href="{{ route('proposals.index', ['status' => 'sent']) }}" class="hover:underline">{{ $proposalsSent }} sent, awaiting an answer</a> · <a href="{{ route('proposals.index', ['status' => 'accepted']) }}" class="hover:underline">{{ $proposalsAccepted }} accepted</a></dd>
             </div>
             <div class="card">
+                <dt class="text-sm text-zinc-600">Active projects</dt>
+                <dd class="mt-1 text-lg font-semibold"><a href="{{ route('projects.index') }}" class="hover:underline">{{ $activeProjects }}</a></dd>
+                <dd class="text-xs {{ $overdueMilestones > 0 ? 'font-medium text-red-700' : 'text-zinc-500' }}">{{ $overdueMilestones }} overdue {{ Str::plural('milestone', $overdueMilestones) }} · {{ $releasesAwaitingApproval }} {{ Str::plural('release', $releasesAwaitingApproval) }} awaiting approval</dd>
+            </div>
+            <div class="card">
                 <dt class="text-sm text-zinc-600">Active customers</dt>
                 <dd class="mt-1 text-lg font-semibold"><a href="{{ route('customers.index', ['status' => 'active']) }}" class="hover:underline">{{ $customerCount }}</a></dd>
             </div>

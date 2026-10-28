@@ -150,6 +150,25 @@
         </div>
 
         <aside class="space-y-6" aria-label="Actions">
+            @if ($proposal->project)
+                <p class="card text-sm">Change request for project <a href="{{ route('projects.show', $proposal->project) }}" class="text-emerald-700 underline">{{ $proposal->project->name }}</a>.{{ $proposal->status === ProposalStatus::Accepted ? ' Its work and price were added to the project.' : '' }}</p>
+            @endif
+            @if ($proposal->status === ProposalStatus::Accepted && ! $proposal->project_id)
+                @if ($proposal->createdProject)
+                    <p class="card text-sm">Project: <a href="{{ route('projects.show', $proposal->createdProject) }}" class="text-emerald-700 underline">{{ $proposal->createdProject->name }}</a></p>
+                @else
+                    @can('create', App\Models\Project::class)
+                        <section class="card">
+                            <h2 class="mb-2 font-semibold">Start the project</h2>
+                            <p class="mb-3 text-sm text-zinc-600">This proposal was accepted before projects existed. Create its project from the package's delivery template.</p>
+                            <form method="POST" action="{{ route('proposals.project', $proposal) }}">
+                                @csrf
+                                <button type="submit" class="btn-primary w-full">Create project</button>
+                            </form>
+                        </section>
+                    @endcan
+                @endif
+            @endif
             @if ($latest)
                 @can('update', $proposal)
                     @if ($proposal->status === ProposalStatus::Draft || $canReRequest)

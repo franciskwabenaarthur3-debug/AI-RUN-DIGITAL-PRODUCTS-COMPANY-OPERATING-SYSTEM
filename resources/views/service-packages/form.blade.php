@@ -31,6 +31,12 @@
                 <textarea id="exclusions" name="exclusions" rows="6" class="form-input">{{ old('exclusions', implode("\n", $package->exclusions ?? [])) }}</textarea>
                 <x-input-error for="exclusions" />
             </div>
+            <div class="sm:col-span-2">
+                <label for="delivery_template" class="form-label">Delivery template <span class="font-normal text-zinc-500">("# Milestone" lines, then one task per line; blank uses the default)</span></label>
+                <textarea id="delivery_template" name="delivery_template" rows="8" maxlength="10000" placeholder="# Discovery&#10;- Confirm requirements with the client&#10;# Build&#10;- Build the site on staging" class="form-input font-mono text-sm">{{ old('delivery_template', App\Services\ServicePackageService::templateText($package->delivery_template)) }}</textarea>
+                <x-input-error for="delivery_template" />
+                <p class="mt-1 text-xs text-zinc-500">A project for an accepted proposal starts with these milestones and tasks.</p>
+            </div>
             <div>
                 <label for="base_price" class="form-label">Base price</label>
                 <input id="base_price" name="base_price" inputmode="decimal" required value="{{ old('base_price', $price) }}" placeholder="450.00" class="form-input">

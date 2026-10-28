@@ -4,10 +4,10 @@
         'qualified', 'replied', 'converted', 'accepted', 'active', 'complete', 'completed', 'succeeded', 'enabled' => 'bg-emerald-50 text-emerald-800 ring-emerald-600/20',
         'outreach_drafted', 'contacted', 'sent', 'researched', 'in_progress', 'queued', 'running' => 'bg-sky-50 text-sky-800 ring-sky-600/20',
         'unsubscribed', 'disqualified', 'lost', 'draft', 'withdrawn', 'declined', 'inactive', 'cancelled', 'disabled', 'created' => 'bg-zinc-100 text-zinc-700 ring-zinc-500/20',
-        'executed', 'approved' => 'bg-emerald-50 text-emerald-800 ring-emerald-600/20',
-        'executing' => 'bg-sky-50 text-sky-800 ring-sky-600/20',
-        'rejected', 'expired', 'denied' => 'bg-zinc-100 text-zinc-700 ring-zinc-500/20',
-        'failed', 'invalidated', 'needs_reconciliation' => 'bg-red-50 text-red-800 ring-red-600/20',
+        'executed', 'approved', 'approved_for_release', 'delivered', 'verified', 'passed', 'closed' => 'bg-emerald-50 text-emerald-800 ring-emerald-600/20',
+        'executing', 'planning', 'internal_review', 'client_review', 'deployed', 'in_review' => 'bg-sky-50 text-sky-800 ring-sky-600/20',
+        'rejected', 'expired', 'denied', 'skipped', 'rolled_back', 'on_hold' => 'bg-zinc-100 text-zinc-700 ring-zinc-500/20',
+        'failed', 'invalidated', 'needs_reconciliation', 'failed_verification' => 'bg-red-50 text-red-800 ring-red-600/20',
         default => 'bg-amber-50 text-amber-800 ring-amber-600/20',
     };
 @endphp

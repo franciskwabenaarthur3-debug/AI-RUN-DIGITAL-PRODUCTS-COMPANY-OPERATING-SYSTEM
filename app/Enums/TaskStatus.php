@@ -42,6 +42,15 @@ enum TaskStatus: string
         return in_array($target, $this->allowedTransitions(), true);
     }
 
+    /**
+     * A task done by a person (no agent) skips the queue: it goes from
+     * created or blocked straight to completed when the person marks it done.
+     */
+    public function canBeCompletedByPerson(): bool
+    {
+        return in_array($this, [self::Created, self::Blocked], true);
+    }
+
     public function isTerminal(): bool
     {
         return $this->allowedTransitions() === [];

@@ -60,6 +60,14 @@ Blocked tasks carry the reason in their failure message (disabled agent, unavail
 - **A send needs reconciliation:** the worker or request died after sending started. Check the mail service or ask the recipient whether it arrived. If it did, request approval again and record a manual send that says so; if not, request approval again and send.
 - **Discount limit:** `PROPOSALS_MAX_DISCOUNT_PERCENT` (default 20).
 
+## Projects and releases
+
+- **A production release cannot be submitted:** the release page lists why: a mandatory check not passed, the version not verified on staging, or the project not yet approved for release. Mandatory checks cannot be skipped; fix the cause and record the check again with new evidence.
+- **Health check says private or reserved address:** the URL resolves to an internal address and was not contacted. Use the public URL, or verify by hand if the site is only reachable internally. On a local machine you can set `RELEASE_HEALTH_CHECK_ALLOW_PRIVATE=true`; never in production.
+- **Health check redirected:** the check does not follow redirects. Use the final URL (often `https://` or `www.`) in a new release.
+- **A production release went wrong:** follow its rollback plan with your own tools, then record the rollback on the release page. Fix, create a new version, and go through staging and approval again.
+- **Record a deployment that needs reconciliation:** the approval shows needs reconciliation if the request died while recording. Check the site; if it was deployed, request approval again and record it with a note saying so.
+
 ## Approvals needing reconciliation
 
 A request in **needs reconciliation** started executing but never recorded an outcome (worker crash), and stayed that way for `APPROVALS_RECONCILE_AFTER_MINUTES`. It is never retried automatically. Check whether the action actually happened (the task page shows the tool call), then fix the records by hand. To try again, the agent must make a new call, which creates a new request.

@@ -6,7 +6,9 @@ use App\Enums\AgentRunStatus;
 use App\Enums\ApprovalStatus;
 use App\Enums\CustomerStatus;
 use App\Enums\LeadStatus;
+use App\Enums\ProjectStatus;
 use App\Enums\ProposalStatus;
+use App\Enums\ReleaseStatus;
 use App\Models\AgentRun;
 use App\Models\ApprovalRequest;
 use App\Models\AuditLog;
@@ -14,6 +16,9 @@ use App\Models\CompanySetting;
 use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\ModelUsage;
+use App\Models\Project;
+use App\Models\ProjectMilestone;
+use App\Models\ProjectRelease;
 use App\Models\Proposal;
 use App\Models\ServicePackage;
 use App\Models\Task;
@@ -38,6 +43,9 @@ class DashboardController extends Controller
             'proposalsAwaitingApproval' => Proposal::query()->where('status', ProposalStatus::PendingApproval)->count(),
             'proposalsSent' => Proposal::query()->where('status', ProposalStatus::Sent)->count(),
             'proposalsAccepted' => Proposal::query()->where('status', ProposalStatus::Accepted)->count(),
+            'activeProjects' => Project::query()->whereNotIn('status', [ProjectStatus::Delivered, ProjectStatus::Closed, ProjectStatus::Cancelled])->count(),
+            'overdueMilestones' => ProjectMilestone::query()->overdue()->whereHas('project', fn ($q) => $q->whereNotIn('status', [ProjectStatus::Delivered, ProjectStatus::Closed, ProjectStatus::Cancelled]))->count(),
+            'releasesAwaitingApproval' => ProjectRelease::query()->where('status', ReleaseStatus::PendingApproval)->count(),
             'customerCount' => Customer::query()->where('status', CustomerStatus::Active)->count(),
             'tasksByStatus' => Task::query()->selectRaw('status, COUNT(*) as total')->groupBy('status')->pluck('total', 'status'),
             'failedRuns' => AgentRun::query()->where('status', AgentRunStatus::Failed)->where('created_at', '>=', now()->subDays(7))->count(),

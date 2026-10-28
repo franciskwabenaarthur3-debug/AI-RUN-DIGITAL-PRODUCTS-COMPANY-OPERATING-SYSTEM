@@ -89,6 +89,40 @@ class TaskService
         return $task;
     }
 
+    /**
+     * A person marks their own (agent-less) task done. Agent work is
+     * completed only through the run and review flow.
+     */
+    public function completeByPerson(Task $task, User $actor, ?string $note = null): Task
+    {
+        $task = DB::transaction(function () use ($task, $actor, $note) {
+            $task = Task::query()->lockForUpdate()->findOrFail($task->id);
+
+            if ($task->agent_id !== null) {
+                throw new InvalidTransition('This task belongs to an agent; it is completed through review.');
+            }
+            if (! $task->status->canBeCompletedByPerson()) {
+                throw new InvalidTransition("A {$task->status->label()} task cannot be marked done.");
+            }
+            if ($task->hasOpenDependencies()) {
+                throw new InvalidTransition('Finish the tasks this one depends on first.');
+            }
+
+            $from = $task->status;
+            $task->status = TaskStatus::Completed;
+            $task->completed_at = now();
+            $task->result = $note ? ['note' => $note, 'completed_by' => $actor->name] : ['completed_by' => $actor->name];
+            $task->save();
+
+            $this->audit->record('task.completed_by_person', $task, ['from' => $from->value, 'to' => TaskStatus::Completed->value], $actor);
+
+            return $task;
+        });
+        $this->releaseDependents($task);
+
+        return $task;
+    }
+
     public function rejectReview(Task $task, User $actor, string $reason): Task
     {
         if ($task->status !== TaskStatus::AwaitingReview) {

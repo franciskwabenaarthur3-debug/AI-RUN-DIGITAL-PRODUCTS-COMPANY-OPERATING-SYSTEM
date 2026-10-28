@@ -259,6 +259,8 @@ One row per **version**. Versions of the same proposal share `reference` (`P-000
 | response_note | text, null | the recipient's answer as recorded by a person |
 | created_by_user_id, created_by_agent_id | FK, null | |
 
+Phase 7 adds `project_id` (FK projects, null): set on a change request, the project whose client it goes to. It is part of the approved payload when set.
+
 ## proposal_items
 
 Priced lines of a version, ordered by `position`; position 0 is the package at its price. `line_total_minor` = `quantity` × `unit_price_minor`. Lines cannot be created, changed or deleted once the version leaves draft (model guard).
@@ -266,3 +268,64 @@ Priced lines of a version, ordered by `position`; position 0 is the package at i
 ## proposal_events
 
 Append-only history of a version (model guard): `event_type` (created, edited, submitted, approval_requested_again, approved, rejected, sent, send_refused, send_failed, accepted, declined, changes_requested, expired, withdrawn, superseded, version_created), `actor_type` (user, agent, system), `actor_id`, redacted `metadata`, `created_at`.
+
+## service_packages (Phase 7)
+
+`delivery_template` json, null: list of `{name, tasks: [title, …]}` milestones a new project starts with.
+
+## projects
+
+Written only by `ProjectService` and `ReleaseService`.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| customer_id | FK, null, restrict | |
+| proposal_id | FK, null, **unique**, restrict | the accepted proposal; one project per proposal |
+| name, description | string(200), text | |
+| status | string(32), indexed | see workflows |
+| start_date, due_date | date, null | |
+| budget_minor, currency | bigint, char(3) | from the proposal, plus accepted change requests |
+| repository_url, staging_url, production_url | string, null | http(s) links without credentials |
+| handover_checklist | json | `[{item, done, by, at}]` from `company_os.projects.handover_checklist` |
+| created_by_user_id | FK, null | |
+| delivered_at, closed_at | timestamps, null | |
+
+## project_milestones
+
+`project_id` (cascade), `position`, `name`, `description`, `status` (pending, in_progress, completed), `due_at` date, `completed_at`.
+
+## project_deliverables
+
+`project_id`, `milestone_id` (null), `name`, `type` (website, design, document, theme, plugin, source_code, other), `url` (a link; files are not stored), `version` (raised when the link changes), `status` (draft, in_review, approved, delivered), `metadata`.
+
+## tasks (Phase 7)
+
+Adds `project_id`, `milestone_id` and `assignee_user_id` (a person doing the task instead of an agent), all nullable.
+
+## project_releases
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| project_id | FK, restrict | |
+| environment | string(16) | staging, production |
+| version | string(64) | unique with project and environment |
+| commit_reference | string(100), null | |
+| target_url | string | |
+| release_notes, rollback_plan | text | |
+| status | string(24), indexed | see workflows |
+| approval_request_id | FK, null | the current `release.deploy_production` approval |
+| content_hash | char(64), null | SHA-256 of the approved payload |
+| submitted_at, deployed_at | timestamps, null | |
+| deployment_note | text, null | how the person deployed it |
+| health_status, health_checked_at, health_detail | string(16), timestamp, json | healthy, unhealthy or manual; HTTP status, error, duration, address |
+| rolled_back_at, rollback_note | timestamp, text | |
+
+The project, environment, version, commit, URL, notes and rollback plan cannot change once the release leaves draft (model guard).
+
+## release_checks
+
+`project_release_id` (cascade), `check_key` (unique per release), `label`, `mandatory`, `status` (pending, passed, failed, skipped), `evidence`, `recorded_by_user_id`, `recorded_at`. On a production release they cannot change once it leaves draft; on any release once it is cancelled or rolled back (model guard).
+
+## project_events
+
+Append-only history of a project and its releases (model guard): `event_type`, `actor_type`, `actor_id`, `note`, redacted `metadata` (release events carry `release_id`), `created_at`.

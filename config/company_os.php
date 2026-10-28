@@ -101,6 +101,41 @@ return [
     ],
 
     /*
+    | Project delivery.
+    */
+    'projects' => [
+        // Used when a package has no delivery template of its own.
+        'default_template' => [
+            ['name' => 'Discovery', 'tasks' => ['Confirm requirements, pages and content with the client', 'Collect brand assets and account access']],
+            ['name' => 'Design', 'tasks' => ['Prepare page designs', 'Get design feedback from the client']],
+            ['name' => 'Build', 'tasks' => ['Build the site on staging', 'Add the client\'s content']],
+            ['name' => 'Quality checks', 'tasks' => ['Run automated tests and the security scan', 'Check accessibility, speed and browsers']],
+            ['name' => 'Launch and handover', 'tasks' => ['Release to production after approval', 'Hand over access, files and training']],
+        ],
+        'handover_checklist' => [
+            'Final files and source delivered',
+            'Admin access handed over securely (not by email)',
+            'Client walkthrough or training done',
+            'Backup taken and restore tested',
+            'Maintenance plan offered',
+        ],
+        // Checks recorded on every release. Mandatory checks must pass
+        // before a production release can be approved; no one can waive them.
+        'release_checks' => [
+            'automated_tests' => ['label' => 'Automated tests passed', 'mandatory' => true],
+            'security_scan' => ['label' => 'Security scan with no high-severity findings', 'mandatory' => true],
+            'content_review' => ['label' => 'Content and links reviewed', 'mandatory' => true],
+            'backup' => ['label' => 'Backup of the current site taken', 'mandatory' => true],
+            'accessibility' => ['label' => 'Accessibility check', 'mandatory' => false],
+            'performance' => ['label' => 'Performance check', 'mandatory' => false],
+            'cross_browser' => ['label' => 'Cross-browser and mobile check', 'mandatory' => false],
+        ],
+        'health_check_timeout_seconds' => (int) env('RELEASE_HEALTH_CHECK_TIMEOUT', 10),
+        // Health checks never reach private or reserved addresses unless this is on (local testing only).
+        'health_check_allow_private_hosts' => (bool) env('RELEASE_HEALTH_CHECK_ALLOW_PRIVATE', false),
+    ],
+
+    /*
     | Approvals.
     */
     'approvals' => [

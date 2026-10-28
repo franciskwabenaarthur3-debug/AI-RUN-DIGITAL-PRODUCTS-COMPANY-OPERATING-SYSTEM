@@ -33,6 +33,7 @@ class ServicePackageRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:5000'],
             'scope' => ['required', 'string', 'max:10000'],
             'exclusions' => ['nullable', 'string', 'max:10000'],
+            'delivery_template' => ['nullable', 'string', 'max:10000'],
             'base_price' => ['required', 'string', 'regex:/^\d{1,13}(\.\d{1,2})?$/'],
             'currency' => ['required', 'string', Rule::in(config('company_os.currencies'))],
             'estimated_days' => ['required', 'integer', 'between:1,365'],

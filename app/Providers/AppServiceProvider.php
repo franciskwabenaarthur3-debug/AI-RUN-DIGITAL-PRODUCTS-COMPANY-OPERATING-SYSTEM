@@ -17,6 +17,7 @@ use App\Ai\ModelCatalog;
 use App\Ai\Providers\AnthropicProvider;
 use App\Events\ApprovalDecided;
 use App\Services\ProposalService;
+use App\Services\ReleaseService;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
@@ -54,5 +55,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Event::listen(ApprovalDecided::class, [ProposalService::class, 'onApprovalDecided']);
+        Event::listen(ApprovalDecided::class, [ReleaseService::class, 'onApprovalDecided']);
     }
 }
