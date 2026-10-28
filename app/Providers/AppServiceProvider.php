@@ -18,10 +18,12 @@ use App\Agents\Tools\ToolRegistry;
 use App\Ai\ModelCatalog;
 use App\Ai\Providers\AnthropicProvider;
 use App\Events\ApprovalDecided;
+use App\Models\User;
 use App\Services\MaintenanceService;
 use App\Services\ProposalService;
 use App\Services\ReleaseService;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -62,5 +64,8 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(ApprovalDecided::class, [ProposalService::class, 'onApprovalDecided']);
         Event::listen(ApprovalDecided::class, [ReleaseService::class, 'onApprovalDecided']);
         Event::listen(ApprovalDecided::class, [MaintenanceService::class, 'onApprovalDecided']);
+
+        Gate::define('viewSystemStatus', fn (User $user) => $user->canOperate());
+        Gate::define('reviewReadiness', fn (User $user) => $user->is_active && $user->isFounder());
     }
 }

@@ -24,6 +24,7 @@
             <div class="border-t border-charcoal-700 px-5 py-4 text-sm text-zinc-300">
                 <p class="truncate font-medium text-white">{{ auth()->user()->name }}</p>
                 <p class="text-xs text-zinc-400">{{ auth()->user()->role->label() }}</p>
+                <a href="{{ route('account.security') }}" class="mt-2 block text-sm text-zinc-300 hover:text-white">Account security</a>
                 <form method="POST" action="{{ route('logout') }}" class="mt-3">
                     @csrf
                     <button type="submit" class="text-sm text-emerald-300 hover:text-emerald-200">Log out</button>
@@ -40,6 +41,7 @@
                 </summary>
                 <div class="mt-3 space-y-3">
                     @include('components.layouts.navigation')
+                    <a href="{{ route('account.security') }}" class="block px-3 text-sm text-zinc-300">Account security</a>
                     <form method="POST" action="{{ route('logout') }}" class="px-3">
                         @csrf
                         <button type="submit" class="text-sm text-emerald-300">Log out ({{ auth()->user()->name }})</button>

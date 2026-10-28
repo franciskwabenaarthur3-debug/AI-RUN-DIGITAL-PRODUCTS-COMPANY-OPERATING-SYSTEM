@@ -14,6 +14,9 @@
     @can('viewAny', App\Models\OperatingReport::class)
         <x-nav-link route="reports.index" active="reports.*">Reports</x-nav-link>
     @endcan
+    @can('viewSystemStatus')
+        <x-nav-link route="system.index">System</x-nav-link>
+    @endcan
     <x-nav-link route="settings.edit">Settings</x-nav-link>
     @can('viewAny', App\Models\AuditLog::class)
         <x-nav-link route="audit.index">Audit log</x-nav-link>

@@ -7,7 +7,7 @@
 <x-layouts.app :title="'Service report · '.$task->title">
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
         <p class="text-sm"><a href="{{ route('maintenance.tasks.show', $task) }}" class="text-emerald-700 underline">Back to the visit</a></p>
-        <button type="button" onclick="window.print()" class="btn-secondary">Print</button>
+        <button type="button" data-print class="btn-secondary">Print</button>
     </div>
 
     @if ($task->status !== MaintenanceTaskStatus::Completed)

@@ -1,10 +1,12 @@
 <?php
 
+use App\Http\Controllers\Account\SecurityController;
 use App\Http\Controllers\AgentController;
 use App\Http\Controllers\AlertController;
 use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\SessionController;
+use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LeadActionController;
@@ -17,6 +19,7 @@ use App\Http\Controllers\ReleaseController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ServicePackageController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\SystemStatusController;
 use App\Http\Controllers\TaskController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,12 +28,24 @@ Route::redirect('/', '/dashboard');
 Route::middleware('guest')->group(function () {
     Route::get('/login', [SessionController::class, 'create'])->name('login');
     Route::post('/login', [SessionController::class, 'store'])->middleware('throttle:20,1')->name('login.store');
+    Route::get('/login/two-factor', [TwoFactorChallengeController::class, 'create'])->name('two-factor.challenge');
+    Route::post('/login/two-factor', [TwoFactorChallengeController::class, 'store'])->middleware('throttle:20,1')->name('two-factor.store');
 });
 
-Route::middleware(['auth', 'active'])->group(function () {
+Route::middleware(['auth', 'active', 'two-factor'])->group(function () {
     Route::post('/logout', [SessionController::class, 'destroy'])->name('logout');
 
+    Route::prefix('account')->name('account.')->controller(SecurityController::class)->group(function () {
+        Route::get('security', 'show')->name('security');
+        Route::put('password', 'password')->middleware('throttle:10,1')->name('password');
+        Route::post('two-factor', 'begin')->name('two-factor.begin');
+        Route::post('two-factor/confirm', 'confirm')->middleware('throttle:10,1')->name('two-factor.confirm');
+        Route::post('two-factor/recovery-codes', 'recoveryCodes')->middleware('throttle:10,1')->name('two-factor.recovery-codes');
+        Route::post('two-factor/disable', 'disable')->middleware('throttle:10,1')->name('two-factor.disable');
+    });
+
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/system', SystemStatusController::class)->name('system.index');
 
     Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
     Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');

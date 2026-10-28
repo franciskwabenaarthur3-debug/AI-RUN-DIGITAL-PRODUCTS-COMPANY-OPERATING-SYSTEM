@@ -46,12 +46,15 @@ The app uses conventional Laravel directories, with module boundaries expressed 
 | `app/Services/MaintenanceService.php` | Maintenance plans, scheduling, visits, findings and live-change approvals |
 | `app/Services/AlertService.php` | Deduplicated in-app alerts and the hourly sweep |
 | `app/Services/OperatingReportService.php` | Operating reports computed from records; stored snapshots |
+| `app/Services/TwoFactorService.php`, `app/Security/Totp.php` | Two-step sign-in and recovery codes |
+| `app/Backups/BackupService.php` | Backups and restore tests |
+| `app/Monitoring/SystemHealth.php`, `ReadinessCheck.php` | System page checks and the pilot readiness check |
 | `config/company_os.php` | Allowed currencies, login throttle, redacted keys, AI model catalog, timeouts and retries |
 
 ## Decisions
 
 - **Database:** PostgreSQL in all real environments. Tests default to SQLite in-memory for speed; CI also runs the full suite on PostgreSQL. PostgreSQL-only features (the audit trigger) are guarded by driver checks.
-- **Authentication:** Hand-written session login using Laravel's `Auth` guard rather than a starter kit, because the app must not offer public registration, password reset by email or profile self-service yet. MFA is planned before the pilot.
+- **Authentication:** Hand-written session login using Laravel's `Auth` guard rather than a starter kit, because the app must not offer public registration or password reset by email. Two-step sign-in is hand-written too (RFC 6238 in `App\Security\Totp`); the only added dependency is `bacon/bacon-qr-code` for the setup QR code.
 - **Money:** integer minor units (`*_minor` columns, `bigint`). Only two-decimal currencies are allowed.
 - **AI provider:** Anthropic Claude through the official `anthropic-ai/sdk` package, behind `ModelProvider` so another provider can be added as one class. Agents reference catalog keys, not model ids.
 - **Queue:** database driver (`QUEUE_CONNECTION=database`).

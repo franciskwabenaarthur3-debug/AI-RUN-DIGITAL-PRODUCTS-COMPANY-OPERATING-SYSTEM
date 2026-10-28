@@ -2,13 +2,14 @@
 
 An AI-assisted operating system for a small digital products company (websites, WordPress work, maintenance, digital products). The founder stays in control: AI agents will work through registered tools, persisted tasks and enforceable approvals, never through unrestricted access.
 
-**Status: Phase 8 (maintenance and reporting).** What exists today is listed below. Nothing else should be assumed to work yet.
+**Status: Phase 9 (pilot and production readiness).** All nine phases of the build are in place; the pilot with real clients and the production deployment are run by the founder (see [deployment](docs/deployment.md)). What exists today is listed below. Nothing else should be assumed to work yet.
 
 | Area | State |
 | --- | --- |
 | Laravel 12 skeleton, PHP 8.2-compatible lock file | Done |
 | PostgreSQL configuration (SQLite in-memory for fast tests) | Done |
 | Session login/logout, rate limiting, deactivated-user lockout, no public registration | Done |
+| Two-step sign-in with an authenticator app and single-use recovery codes, required for founders; password change; security headers (content security policy, frame and type protections) | Done |
 | Roles: founder, operator, viewer | Done |
 | Company settings (currency, timezone, AI budget limit in USD with an alert threshold, approval policy, emergency pause flag) | Done; the pause is enforced on agent runs and tool calls, and the budget is checked before every paid run |
 | Service packages: create, edit, deactivate (founder only), prices in minor units | Done |
@@ -34,6 +35,7 @@ An AI-assisted operating system for a small digital products company (websites, 
 | Releases: staging and production records, mandatory and optional quality checks with evidence, production gated on passed mandatory checks, a verified staging release, the client's approval and the founder's approval of the exact release; deployment recorded by the founder; HTTP health check; rollback record | Done; Company OS records deployments, it does not deploy |
 | Maintenance: founder-priced plans per customer and site, recurring visits created by the scheduler (no duplicates), non-destructive checklists, health check, findings with severity, founder approval of the exact change and rollback plan before any live-site change, completion evidence frozen afterwards, printable service reports, renewal reminders | Done; people do the maintenance work, Company OS records it |
 | Alerts (in-app only): overdue and failed visits, high and critical findings, renewals, failed releases, approvals needing reconciliation, failed agent runs, AI budget | Done; nothing is emailed |
+| Monitoring: System page (database, scheduler, queue worker, failed jobs, backups, restore tests) with daily alerts; database backups with a checksum and an automated restore test into a scratch database; `company-os:readiness` check and permissions review | Done; off-site copies of backups and an external uptime monitor are set up by the founder |
 | Operating reports (daily, weekly, monthly) from recorded data with rule-based advisory priorities, stored for finished periods; AI cost by month, agent and model; dashboard maintenance and alert counts | Done; revenue, expenses, hosting and support are listed as not recorded |
 
 ## Requirements
@@ -59,6 +61,7 @@ npm install && npm run build
 
 # Create your founder account (prompts for a password, min 12 chars)
 php artisan company-os:create-user you@example.com --name="Your Name" --role=founder
+# On first sign-in a founder sets up two-step sign-in (authenticator app).
 
 php artisan serve
 ```
@@ -94,6 +97,7 @@ CI (`.github/workflows/tests.yml`) runs both suites on PHP 8.2 with PostgreSQL 1
 - [Workflows](docs/workflows.md)
 - [Agent policies](docs/agent-policies.md)
 - [Operations runbook](docs/operations-runbook.md)
+- [Deployment](docs/deployment.md)
+- [Backup and recovery](docs/backup-recovery.md)
+- [User manual](docs/user-manual.md)
 - [Test report](docs/test-report.md)
-
-The remaining documents listed in the master plan (deployment, backup and recovery, user manual) will be written as the features they describe are built.

@@ -5,6 +5,9 @@ This describes controls that are implemented now. Planned controls are listed se
 ## Implemented
 
 - **Accounts:** no public registration. Users are created with `php artisan company-os:create-user`, which requires a 12+ character password and records an audit event. `role` and `is_active` are not mass assignable.
+- **Two-step sign-in:** time-based codes from an authenticator app (RFC 6238, implemented in `App\Security\Totp` and checked against the RFC test values), set up on the Account security page by scanning a QR code. The secret is stored encrypted with `APP_KEY` and never shown after setup; each code works once (the last accepted time step is stored) and one step of clock drift is allowed. Eight single-use recovery codes are shown once and stored only as SHA-256 hashes. After a correct password the session holds only a pending sign-in for 5 minutes; five wrong codes drop it, and a deactivated account cannot finish. Founders must use it (`SECURITY_REQUIRE_FOUNDER_TWO_FACTOR`, on by default): until it is set up they can reach only the Account security page, and they cannot turn it off. A lost phone without recovery codes is reset only from the server console (`company-os:reset-two-factor`), audited. Others can turn it off with their password and a code.
+- **Passwords:** people change their own password with the current one; this clears "keep me signed in" tokens.
+- **Browser headers:** every response sends a content security policy (scripts only from this site, no inline scripts or event handlers, no plugins, no framing, forms only to this site), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, a strict referrer policy, a permissions policy, and HSTS on HTTPS. Inline style attributes are allowed because the proposal document shares markup with the email. A test fails if any view adds an inline script.
 - **Login:** Laravel session guard, bcrypt hashing, session regeneration on login, session invalidation and CSRF token rotation on logout. Logout is POST only.
 - **Brute force:** 5 failed attempts per email + IP locks that pair out for 60 seconds (`LOGIN_MAX_ATTEMPTS`), plus a route throttle of 20 requests/minute per IP.
 - **Deactivation:** inactive users cannot log in; an already logged-in user who is deactivated is logged out on the next request.
@@ -25,11 +28,13 @@ This describes controls that are implemented now. Planned controls are listed se
 - **Sessions:** stored in the database and encrypted (`SESSION_ENCRYPT=true`). Set `SESSION_SECURE_COOKIE=true` on HTTPS environments.
 - **Files:** the local disk's signed-URL serving route is disabled (`serve => false`).
 - **AI provider:** the API key is read from `ANTHROPIC_API_KEY` only, never stored in the database or logs; provider error messages are shortened and authentication errors never include provider text. Task content, tool results and web content are marked as untrusted data in prompts, but no control depends on that: the model cannot change permissions, approve anything or exceed limits, because those are enforced in code. Model output is accepted only through the `submit_result` tool and validated against the output schema; tool calls are validated by the gateway. Lead email addresses and phone numbers are not sent to the provider. No sending tool exists.
+- **Backups:** made with `pg_dump`/`pg_restore` called with fixed arguments (no shell), the password passed in the environment, files written `0600` to a private folder with a SHA-256 checksum. Restore tests refuse the live database as a target and refuse a file whose checksum changed. Backups contain encrypted columns, so `APP_KEY` must be kept with them (and kept separately from them).
 - **Secrets:** none in source; `.env` is git-ignored and `.env.example` holds keys only.
 
-## Planned (not implemented yet)
+## Not implemented
 
-- MFA for founder accounts (before the first pilot).
+- A customer portal: clients have no logins, so "one customer cannot see another's records" is tested for staff roles, guests, deactivated accounts and nested URLs (acceptance case 4). Repeat it for client logins if a portal is built.
 - Database-level immutability trigger for approval decisions (today: model guard plus the unique constraint).
-- SSRF protection for agent website-reading tools (with the first such tool; the release health check has its own guard).
-- Security headers / CSP middleware, upload validation, retention policies.
+- SSRF protection for agent website-reading tools (with the first such tool; the release and maintenance health check has its own guard).
+- File uploads (there are none, so no upload validation yet) and automatic data retention or deletion; see the retention notes in [backup and recovery](backup-recovery.md).
+- Email delivery of alerts; alerts are in-app.
