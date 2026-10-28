@@ -87,6 +87,20 @@ return [
     ],
 
     /*
+    | Proposals. Sending by email stays off until a real mailer is
+    | configured; until then a founder records sends made outside the app.
+    */
+    'proposals' => [
+        'email_enabled' => (bool) env('PROPOSALS_EMAIL_ENABLED', false),
+        // Laravel mailer used for proposals; null uses MAIL_MAILER.
+        'mailer' => env('PROPOSALS_MAILER'),
+        'max_discount_percent' => (int) env('PROPOSALS_MAX_DISCOUNT_PERCENT', 20),
+        'max_items' => 30,
+        'default_valid_days' => 30,
+        'default_payment_terms' => '50% deposit before work starts, 50% on delivery. Invoices are due within 14 days.',
+    ],
+
+    /*
     | Approvals.
     */
     'approvals' => [

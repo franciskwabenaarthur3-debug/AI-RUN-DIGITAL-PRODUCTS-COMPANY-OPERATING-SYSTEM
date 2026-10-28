@@ -59,6 +59,7 @@ class AgentController extends Controller
             'models' => app(ModelCatalog::class)->options(),
             'model' => app(ModelCatalog::class)->find($agent->model_key),
             'hasInstructions' => AgentInstructions::load($agent) !== null,
+            'instructionVersions' => AgentInstructions::versions($agent),
         ]);
     }
 
@@ -81,6 +82,7 @@ class AgentController extends Controller
         $data = $request->validate([
             'runtime' => ['required', Rule::in($runtimes->names())],
             'model_key' => ['nullable', Rule::in($models->keys()), 'required_if:runtime,llm'],
+            'instructions_version' => ['sometimes', 'string', Rule::in(AgentInstructions::versions($agent))],
             'max_steps' => ['required', 'integer', 'between:1,50'],
             'max_retries' => ['required', 'integer', 'between:0,5'],
             'timeout_seconds' => ['required', 'integer', 'between:10,900'],

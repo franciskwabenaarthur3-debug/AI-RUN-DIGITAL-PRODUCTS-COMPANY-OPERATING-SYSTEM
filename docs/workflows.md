@@ -105,3 +105,29 @@ Retry (failed/blocked → queued, resets automatic retries), cancel (with confir
 - **Execute:** after an approval commits, an `ExecuteApprovedAction` job runs. The gateway re-checks the pause (holds the action until resume), agent status and permission (abandons the approval). `ApprovalService::execute()` then locks the request and refuses anything but a valid, unexpired approval whose decision and stored hash both match the payload about to run; on a mismatch it invalidates the approval. It sets `executing`, commits, runs the side effect outside the transaction, and records `executed` or `failed`. Duplicate jobs find the request already executing or executed and do nothing.
 - **Sweep:** `company-os:expire-approvals` (every five minutes) expires open requests past their deadline and flags stale `executing` requests as `needs_reconciliation`.
 - **Decision-only requests** (`agent.*` action types, from the `request_approval` tool) have no executor. Approving them records the decision; a person performs the action.
+
+## Proposals
+
+Defined in `App\Enums\ProposalStatus` and changed only by `App\Services\ProposalService`, each change under a row lock and recorded as a proposal event and an audit record.
+
+| From | Next |
+| --- | --- |
+| draft | pending_approval (submit), withdrawn |
+| pending_approval | approved or rejected (founder's decision), pending_approval (approval requested again after the earlier request expired), withdrawn |
+| approved | sent, pending_approval (approval requested again after it expired, failed or was invalidated), withdrawn |
+| sent | accepted, declined, changes_requested (recorded by a person), expired (after `expires_at`), withdrawn |
+| accepted, rejected, changes_requested, expired, declined, withdrawn | none for this version |
+
+1. **Draft.** A founder or operator picks a lead or customer and an active service package, or the Sales Agent uses `draft_proposal`. The package line is always the package's price; extra lines, a discount (percentage or fixed, at most `PROPOSALS_MAX_DISCOUNT_PERCENT` of the subtotal, with a reason) and the totals are computed in integer minor units by `ProposalPricing`. The currency is the package's. The recipient defaults to the contact on record.
+2. **Edit.** Only the latest version, and only while it is a draft.
+3. **Submit.** `ProposalChecks` must pass: active package in the same currency, a contactable lead or active customer, a valid recipient email, non-empty scope and payment terms, a validity date after today, and stored totals that match a fresh calculation. The version is frozen and a `proposal.send` approval request is created whose payload is the exact recipient, content, lines and totals. Its hash is stored as `content_hash`.
+4. **Approve.** The founder decides in the approval center. The decision moves the proposal to approved or rejected in the same transaction (`ApprovalDecided` event).
+5. **Send.** Only the founder, with a confirmation, and only the latest approved version. The checks run again (an opt-out after approval stops the send without using the approval). `ApprovalService::execute()` recomputes the payload from the stored version and refuses it unless it matches what was approved; it claims the approval so the send runs once. Then either:
+   - **Email** (only when `PROPOSALS_EMAIL_ENABLED=true`): the proposal is mailed through `PROPOSALS_MAILER` (or the default mailer). The message id the mailer returns is stored. A `log` or `array` mailer is recorded as `not_delivered_local_mailer`; any other transport as `accepted_by_mail_server`. Delivery to the inbox is not confirmed (no bounce or delivery webhooks yet).
+   - **Manual**: the founder records that they sent it themselves and how; nothing is sent by Company OS.
+   A failed send is recorded (`delivery_status = failed`, `send_failed` event), the approval is marked failed, and sending again needs a new approval. A crash mid-send leaves the approval in `needs_reconciliation`; check with the recipient before doing anything else.
+   Sending logs a `proposal_sent` activity on the lead and moves it to contacted when its status allows.
+6. **Response.** A person records accepted, declined or changes requested, with the date and the evidence (for example the client's email). There is no agent tool for this, and repeating the same answer changes nothing. Accepting converts the lead to a customer once, when its status allows conversion. Project creation from accepted proposals comes in Phase 7.
+7. **New version.** From pending approval, approved, rejected, changes requested or expired. The current version, if it was waiting for approval or approved, is withdrawn and its approval invalidated. The copy is a draft with the package line re-priced at the package's current price and needs its own approval.
+8. **Withdraw.** Any version that is not finished. An open approval is invalidated. Withdrawing a sent proposal does not contact the recipient.
+9. **Expiry.** `company-os:expire-proposals` (hourly) expires sent proposals past their validity date.

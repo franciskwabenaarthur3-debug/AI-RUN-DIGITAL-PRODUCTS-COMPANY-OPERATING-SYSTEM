@@ -59,7 +59,7 @@ class AgentService
     }
 
     public const CONFIGURABLE = [
-        'runtime', 'model_key', 'max_steps', 'max_retries', 'timeout_seconds',
+        'runtime', 'model_key', 'instructions_version', 'max_steps', 'max_retries', 'timeout_seconds',
         'max_tokens_per_run', 'max_tool_calls_per_run', 'monthly_budget_minor',
     ];
 

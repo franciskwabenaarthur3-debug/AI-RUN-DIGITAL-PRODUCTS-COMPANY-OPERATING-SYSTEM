@@ -60,7 +60,8 @@ class AgentSeeder extends Seeder
                 'name' => $definition['name'],
                 'slug' => str_replace('_', '-', $role),
                 'description' => $definition['description'],
-                'instructions_version' => 'v1',
+                // New installs start on the newest instructions for the role.
+                'instructions_version' => collect(glob(resource_path("agents/{$role}/*.md")) ?: [])->map(fn ($f) => basename($f, '.md'))->sort(SORT_NATURAL)->last() ?? 'v1',
                 'runtime' => 'mock',
                 'model_key' => null,
             ]);

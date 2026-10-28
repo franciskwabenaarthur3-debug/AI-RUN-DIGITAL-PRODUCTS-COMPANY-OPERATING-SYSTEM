@@ -17,6 +17,11 @@
                 <dd class="mt-1 text-lg font-semibold {{ $followUpsDue > 0 ? 'text-amber-700' : '' }}"><a href="{{ route('leads.index', ['follow_up' => 'due']) }}" class="hover:underline">{{ $followUpsDue }}</a></dd>
             </div>
             <div class="card">
+                <dt class="text-sm text-zinc-600">Proposals awaiting approval</dt>
+                <dd class="mt-1 text-lg font-semibold {{ $proposalsAwaitingApproval > 0 ? 'text-amber-700' : '' }}"><a href="{{ route('proposals.index', ['status' => 'pending_approval']) }}" class="hover:underline">{{ $proposalsAwaitingApproval }}</a></dd>
+                <dd class="text-xs text-zinc-500"><a href="{{ route('proposals.index', ['status' => 'sent']) }}" class="hover:underline">{{ $proposalsSent }} sent, awaiting an answer</a> · <a href="{{ route('proposals.index', ['status' => 'accepted']) }}" class="hover:underline">{{ $proposalsAccepted }} accepted</a></dd>
+            </div>
+            <div class="card">
                 <dt class="text-sm text-zinc-600">Active customers</dt>
                 <dd class="mt-1 text-lg font-semibold"><a href="{{ route('customers.index', ['status' => 'active']) }}" class="hover:underline">{{ $customerCount }}</a></dd>
             </div>
@@ -84,7 +89,7 @@
                 </li>
                 <li class="flex gap-2">
                     <span aria-hidden="true">○</span>
-                    <span>Approvals, proposals and projects are added in later phases and will appear in the menu when they work.</span>
+                    <span>Projects, delivery and maintenance are added in later phases and will appear in the menu when they work.</span>
                 </li>
             </ol>
         </section>

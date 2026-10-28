@@ -122,6 +122,16 @@
                                 @endforeach
                             </select>
                         </div>
+                        @if ($instructionVersions)
+                            <div>
+                                <label for="instructions_version" class="form-label">Instructions version</label>
+                                <select id="instructions_version" name="instructions_version" class="form-input">
+                                    @foreach ($instructionVersions as $v)
+                                        <option value="{{ $v }}" @selected(old('instructions_version', $agent->instructions_version) === $v)>{{ $v }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        @endif
                         @foreach (['max_steps' => 'Max steps per run', 'max_tokens_per_run' => 'Max tokens per run', 'max_tool_calls_per_run' => 'Max tool calls per run', 'timeout_seconds' => 'Timeout (seconds)', 'max_retries' => 'Automatic retries'] as $field => $label)
                             <div>
                                 <label for="{{ $field }}" class="form-label">{{ $label }}</label>

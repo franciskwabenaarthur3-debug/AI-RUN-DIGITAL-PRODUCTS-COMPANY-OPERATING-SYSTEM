@@ -23,4 +23,10 @@
             @endcan
         </dl>
     </section>
+
+    @include('proposals._list', [
+        'proposals' => App\Models\Proposal::query()->where('customer_id', $customer->id)->when($customer->lead, fn ($q) => $q->orWhere('lead_id', $customer->lead->id))->latest('id')->get(),
+        'create' => $customer->status === App\Enums\CustomerStatus::Active ? ['customer_id' => $customer->id] : null,
+        'class' => 'mt-6 max-w-3xl',
+    ])
 </x-layouts.app>

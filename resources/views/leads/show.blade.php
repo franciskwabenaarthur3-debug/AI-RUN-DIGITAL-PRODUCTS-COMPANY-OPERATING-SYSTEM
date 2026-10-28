@@ -43,6 +43,8 @@
                 @endif
             </section>
 
+            @include('proposals._list', ['proposals' => $lead->proposals()->get(), 'create' => $lead->canBeContacted() && ! $lead->customer_id ? ['lead_id' => $lead->id] : null])
+
             <section class="card" aria-labelledby="research">
                 <h2 id="research" class="mb-4 font-semibold">Research evidence</h2>
                 <dl class="grid gap-4 text-sm sm:grid-cols-2">
