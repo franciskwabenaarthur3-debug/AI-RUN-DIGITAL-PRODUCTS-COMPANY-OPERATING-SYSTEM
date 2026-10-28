@@ -35,6 +35,7 @@ The app uses conventional Laravel directories, with module boundaries expressed 
 | `app/Agents/Runtime/*` | Runtime contract, request/result types, normalized failures, `MockRuntime`, `LlmRuntime` (model tool loop), `RuntimeRegistry` |
 | `app/Ai/*` | AI gateway: `ModelCatalog`/`ModelConfig` (versioned models and prices), `ModelRequest`/`ModelResponse`, normalized `ProviderError`, `Providers\ModelProvider` interface and `AnthropicProvider` (official SDK) |
 | `app/Agents/AgentInstructions.php`, `resources/agents/*` | Fixed policy plus versioned role instructions |
+| `app/Services/ProjectService.php`, `app/Services/ReleaseService.php`, `app/Releases/*` | Projects, milestones, deliverables, handover, change requests; releases, quality checks, production approval, deployment record, health check (`HealthChecker`) and rollback |
 | `app/Proposals/*`, `app/Services/ProposalService.php` | Proposal pricing, checks and lifecycle; `app/Mail/ProposalMail.php` and `resources/views/proposals/_document.blade.php` are the customer-facing document |
 | `app/Services/AiBudgetMonitor.php` | Budget alert and exhaustion status, audited once per month |
 | `app/Services/TaskService.php` | Task lifecycle changes (queue, retry, cancel, review, dependencies) |

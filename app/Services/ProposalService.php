@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\ApprovalStatus;
 use App\Enums\LeadStatus;
+use App\Enums\ProjectStatus;
 use App\Enums\ProposalStatus;
 use App\Enums\RiskLevel;
 use App\Events\ApprovalDecided;
@@ -15,6 +16,7 @@ use App\Models\Agent;
 use App\Models\ApprovalRequest;
 use App\Models\Customer;
 use App\Models\Lead;
+use App\Models\Project;
 use App\Models\Proposal;
 use App\Models\ProposalEvent;
 use App\Models\ServicePackage;
@@ -44,15 +46,17 @@ class ProposalService
         private readonly AuditLogger $audit,
         private readonly ApprovalService $approvals,
         private readonly LeadService $leads,
+        private readonly ProjectService $projects,
     ) {}
 
     /**
-     * @param  array{lead_id?: int|null, customer_id?: int|null, service_package_id: int, title: string, recipient_name?: string|null, recipient_email?: string|null, introduction?: string|null, scope?: list<string>|null, exclusions?: list<string>|null, extra_items?: list<array{description: string, quantity: int, unit_price_minor: int}>, discount_type?: string, discount_value?: int, discount_reason?: string|null, payment_terms?: string|null, expires_at?: string|null}  $data
+     * @param  array{lead_id?: int|null, customer_id?: int|null, project_id?: int|null, service_package_id: int, title: string, recipient_name?: string|null, recipient_email?: string|null, introduction?: string|null, scope?: list<string>|null, exclusions?: list<string>|null, extra_items?: list<array{description: string, quantity: int, unit_price_minor: int}>, discount_type?: string, discount_value?: int, discount_reason?: string|null, payment_terms?: string|null, expires_at?: string|null}  $data
      */
     public function create(array $data, User|Agent $actor): Proposal
     {
         $package = ServicePackage::query()->findOrFail($data['service_package_id']);
         [$lead, $customer] = $this->recipientRecord($data);
+        $project = $this->changeRequestProject($data, $lead, $customer);
 
         if (! $package->is_active) {
             throw ValidationException::withMessages(['service_package_id' => 'Choose an active service package.']);
@@ -63,12 +67,13 @@ class ProposalService
 
         $price = $this->price($package, $data);
 
-        return DB::transaction(function () use ($data, $package, $lead, $customer, $price, $actor) {
+        return DB::transaction(function () use ($data, $package, $lead, $customer, $project, $price, $actor) {
             $proposal = Proposal::query()->create([
                 'reference' => 'P-new-'.Str::uuid(),
                 'version' => 1,
                 'lead_id' => $lead?->id,
                 'customer_id' => $customer?->id,
+                'project_id' => $project?->id,
                 'service_package_id' => $package->id,
                 'title' => $data['title'],
                 'recipient_name' => $this->filledOr($data['recipient_name'] ?? null, $lead?->contact_name ?? $customer?->primary_contact),
@@ -328,6 +333,13 @@ class ProposalService
             $this->event($proposal, $target->value, $actor, $metadata + ['note' => $note]);
             $this->audit->record('proposal.'.$target->value, $proposal, $metadata, $actor);
 
+            // Runs once: only the sent -> accepted transition above reaches it.
+            if ($target === ProposalStatus::Accepted) {
+                $proposal->isChangeRequest()
+                    ? $this->projects->applyChangeRequest($proposal, $actor)
+                    : $this->projects->createFromProposal($proposal, $actor);
+            }
+
             return $proposal;
         });
     }
@@ -441,7 +453,7 @@ class ProposalService
      */
     public function payload(Proposal $proposal): array
     {
-        return [
+        $payload = [
             'reference' => $proposal->reference,
             'version' => $proposal->version,
             'recipient' => ['name' => $proposal->recipient_name, 'email' => $proposal->recipient_email, 'lead_id' => $proposal->lead_id, 'customer_id' => $proposal->customer_id],
@@ -463,6 +475,13 @@ class ProposalService
             'payment_terms' => $proposal->payment_terms,
             'expires_at' => $proposal->expires_at->toDateString(),
         ];
+
+        // Only change requests carry it, so approvals made before projects existed still match.
+        if ($proposal->project_id) {
+            $payload['project_id'] = $proposal->project_id;
+        }
+
+        return $payload;
     }
 
     /**
@@ -505,6 +524,31 @@ class ProposalService
         }
 
         return [$lead, $customer];
+    }
+
+    /**
+     * A change request must go to the same client as the project it extends.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function changeRequestProject(array $data, ?Lead $lead, ?Customer $customer): ?Project
+    {
+        if (blank($data['project_id'] ?? null)) {
+            return null;
+        }
+
+        $project = Project::query()->with('proposal')->findOrFail($data['project_id']);
+        $sameClient = ($customer && $project->customer_id === $customer->id)
+            || ($lead && $project->proposal?->lead_id === $lead->id);
+
+        if (! $project->status->isActive() && $project->status !== ProjectStatus::Delivered) {
+            throw ValidationException::withMessages(['project_id' => "Project \"{$project->name}\" is {$project->status->label()}; it cannot take a change request."]);
+        }
+        if (! $sameClient) {
+            throw ValidationException::withMessages(['project_id' => 'A change request goes to the project\'s own client.']);
+        }
+
+        return $project;
     }
 
     /**
@@ -595,7 +639,7 @@ class ProposalService
         }
 
         try {
-            return $this->leads->convert($lead, $actor)->id;
+            return $this->leads->convert($lead, $actor, acceptedProposal: true)->id;
         } catch (InvalidTransition) {
             return null;
         }

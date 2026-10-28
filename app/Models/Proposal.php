@@ -20,7 +20,7 @@ class Proposal extends Model
     public const CONTENT = [
         'lead_id', 'customer_id', 'service_package_id', 'title', 'recipient_name', 'recipient_email',
         'introduction', 'scope_snapshot', 'subtotal_minor', 'discount_minor', 'discount_reason',
-        'amount_minor', 'currency', 'payment_terms', 'expires_at', 'reference', 'version',
+        'amount_minor', 'currency', 'payment_terms', 'expires_at', 'reference', 'version', 'project_id',
     ];
 
     protected $guarded = ['id'];
@@ -82,6 +82,23 @@ class Proposal extends Model
     public function approvalRequest(): BelongsTo
     {
         return $this->belongsTo(ApprovalRequest::class);
+    }
+
+    /** The existing project a change request adds work to. */
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
+
+    /** The project created when this proposal was accepted. */
+    public function createdProject(): HasOne
+    {
+        return $this->hasOne(Project::class, 'proposal_id');
+    }
+
+    public function isChangeRequest(): bool
+    {
+        return $this->project_id !== null;
     }
 
     public function previousVersion(): BelongsTo

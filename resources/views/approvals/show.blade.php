@@ -31,6 +31,8 @@
                                 <a href="{{ route('leads.show', $approval->resource_id) }}" class="underline">Lead #{{ $approval->resource_id }}</a>
                             @elseif ($approval->resource_type === 'proposal')
                                 <a href="{{ route('proposals.show', $approval->resource_id) }}" class="underline">Proposal #{{ $approval->resource_id }}</a>
+                            @elseif ($approval->resource_type === 'project_release')
+                                <a href="{{ route('releases.show', $approval->resource_id) }}" class="underline">Release #{{ $approval->resource_id }}</a>
                             @else
                                 {{ $approval->resource_type }} #{{ $approval->resource_id }}
                             @endif
@@ -47,6 +49,9 @@
                 @endif
                 @if ($approval->action_type === App\Services\ProposalService::SEND_ACTION)
                     <p class="mt-4 rounded-md bg-sky-50 px-3 py-2 text-xs text-sky-900">Approving lets the founder send exactly this version to exactly this recipient, once. Any change to the proposal needs a new version and a new approval. <a href="{{ route('proposals.preview', $approval->resource_id) }}" class="underline">Preview what the recipient will get</a>.</p>
+                @endif
+                @if ($approval->action_type === App\Services\ReleaseService::DEPLOY_ACTION)
+                    <p class="mt-4 rounded-md bg-sky-50 px-3 py-2 text-xs text-sky-900">Approving lets the founder deploy exactly this version to exactly this URL, once, and record it. Company OS does not deploy it. Every mandatory check is checked again when the deployment is recorded; this approval cannot override a failed check. <a href="{{ route('releases.show', $approval->resource_id) }}" class="underline">Open the release and its check evidence</a>.</p>
                 @endif
                 @if (str_starts_with($approval->action_type, 'agent.'))
                     <p class="mt-4 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-900">Approving records your decision only. Company OS does not carry out this action; a person does.</p>

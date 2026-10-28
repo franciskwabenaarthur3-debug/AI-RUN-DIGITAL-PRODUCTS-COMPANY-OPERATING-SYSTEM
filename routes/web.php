@@ -8,7 +8,9 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LeadActionController;
 use App\Http\Controllers\LeadController;
+use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProposalController;
+use App\Http\Controllers\ReleaseController;
 use App\Http\Controllers\ServicePackageController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TaskController;
@@ -49,6 +51,32 @@ Route::middleware(['auth', 'active'])->group(function () {
         Route::post('respond', 'respond')->name('respond');
         Route::post('withdraw', 'withdraw')->name('withdraw');
         Route::post('new-version', 'newVersion')->name('new-version');
+    });
+    Route::post('proposals/{proposal}/project', [ProjectController::class, 'createFromProposal'])->name('proposals.project');
+
+    Route::resource('projects', ProjectController::class)->only(['index', 'show', 'edit', 'update']);
+    Route::prefix('projects/{project}')->name('projects.')->controller(ProjectController::class)->scopeBindings()->group(function () {
+        Route::post('status', 'status')->name('status');
+        Route::post('feedback', 'feedback')->name('feedback');
+        Route::post('handover', 'handover')->name('handover');
+        Route::post('milestones', 'addMilestone')->name('milestones.store');
+        Route::post('milestones/{milestone}/status', 'milestoneStatus')->name('milestones.status');
+        Route::post('tasks', 'addTask')->name('tasks.store');
+        Route::post('tasks/{task}/complete', 'completeTask')->name('tasks.complete');
+        Route::post('deliverables', 'addDeliverable')->name('deliverables.store');
+        Route::put('deliverables/{deliverable}', 'updateDeliverable')->name('deliverables.update');
+        Route::post('releases', [ReleaseController::class, 'store'])->name('releases.store');
+    });
+    Route::get('releases/{release}', [ReleaseController::class, 'show'])->name('releases.show');
+    Route::prefix('releases/{release}')->name('releases.')->controller(ReleaseController::class)->scopeBindings()->group(function () {
+        Route::post('checks/{check}', 'check')->name('check');
+        Route::post('deploy-staging', 'deployStaging')->name('deploy-staging');
+        Route::post('submit', 'submit')->name('submit');
+        Route::post('deploy', 'deploy')->name('deploy');
+        Route::post('health-check', 'healthCheck')->name('health-check');
+        Route::post('verify', 'verify')->name('verify');
+        Route::post('rollback', 'rollback')->name('rollback');
+        Route::post('cancel', 'cancel')->name('cancel');
     });
 
     Route::get('agents', [AgentController::class, 'index'])->name('agents.index');

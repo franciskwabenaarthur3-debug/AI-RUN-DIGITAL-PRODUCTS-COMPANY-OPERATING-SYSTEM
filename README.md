@@ -2,7 +2,7 @@
 
 An AI-assisted operating system for a small digital products company (websites, WordPress work, maintenance, digital products). The founder stays in control: AI agents will work through registered tools, persisted tasks and enforceable approvals, never through unrestricted access.
 
-**Status: Phase 6 (proposal management).** What exists today is listed below. Nothing else should be assumed to work yet.
+**Status: Phase 7 (project delivery).** What exists today is listed below. Nothing else should be assumed to work yet.
 
 | Area | State |
 | --- | --- |
@@ -30,7 +30,9 @@ An AI-assisted operating system for a small digital products company (websites, 
 | Approval engine: payload snapshot and hash, expiry, founder-only immutable decisions, atomic execution claim, reconciliation flag | Done |
 | Approval center; tool calls on task pages; pending approvals on the dashboard | Done |
 | Proposals: drafts from service packages, server-side pricing and discounts, immutable versions, preview, founder approval of the exact version and recipient, send by email (when configured) or record a manual send, delivery result, responses, expiry | Done |
-| Projects, maintenance | Not started (Phases 7 and 8) |
+| Projects: created once from an accepted proposal, milestones and tasks from the package's delivery template, person and agent tasks, deliverables with versions, blockers, staging and repository links, handover checklist, change requests as priced proposals | Done |
+| Releases: staging and production records, mandatory and optional quality checks with evidence, production gated on passed mandatory checks, a verified staging release, the client's approval and the founder's approval of the exact release; deployment recorded by the founder; HTTP health check; rollback record | Done; Company OS records deployments, it does not deploy |
+| Maintenance, reporting | Not started (Phase 8) |
 
 ## Requirements
 

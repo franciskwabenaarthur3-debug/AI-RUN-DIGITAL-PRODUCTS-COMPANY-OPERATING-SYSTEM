@@ -1,5 +1,5 @@
 @props(['route', 'active' => null])
-@php($isActive = request()->routeIs($active ?? $route))
+@php($isActive = request()->routeIs(...explode(',', $active ?? $route)))
 <a href="{{ route($route) }}"
    @if ($isActive) aria-current="page" @endif
    {{ $attributes->class([

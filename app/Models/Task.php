@@ -20,6 +20,9 @@ class Task extends Model
 
     protected $fillable = [
         'agent_id',
+        'assignee_user_id',
+        'project_id',
+        'milestone_id',
         'parent_task_id',
         'title',
         'description',
@@ -51,6 +54,21 @@ class Task extends Model
     public function agent(): BelongsTo
     {
         return $this->belongsTo(Agent::class);
+    }
+
+    public function assignee(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assignee_user_id');
+    }
+
+    public function project(): BelongsTo
+    {
+        return $this->belongsTo(Project::class);
+    }
+
+    public function milestone(): BelongsTo
+    {
+        return $this->belongsTo(ProjectMilestone::class, 'milestone_id');
     }
 
     public function parent(): BelongsTo

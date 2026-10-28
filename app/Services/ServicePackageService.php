@@ -63,12 +63,45 @@ class ServicePackageService
             'description' => $input['description'] ?? null,
             'scope' => self::lines($input['scope']),
             'exclusions' => self::lines($input['exclusions'] ?? ''),
+            'delivery_template' => self::template($input['delivery_template'] ?? null),
             'base_price_minor' => Money::toMinor($input['base_price']),
             'currency' => $input['currency'],
             'estimated_days' => (int) $input['estimated_days'],
             'revision_limit' => (int) $input['revision_limit'],
             'is_active' => (bool) ($input['is_active'] ?? false),
         ];
+    }
+
+    /**
+     * Parses the delivery template text: "# Milestone" lines start a
+     * milestone, other lines are its tasks. Blank means the default template.
+     *
+     * @return list<array{name: string, tasks: list<string>}>|null
+     */
+    public static function template(?string $text): ?array
+    {
+        $milestones = [];
+        foreach (self::lines($text) as $line) {
+            if (str_starts_with($line, '#')) {
+                $milestones[] = ['name' => trim(ltrim($line, '#')), 'tasks' => []];
+
+                continue;
+            }
+            if ($milestones === []) {
+                $milestones[] = ['name' => 'Delivery', 'tasks' => []];
+            }
+            $milestones[array_key_last($milestones)]['tasks'][] = ltrim($line, "-* \t");
+        }
+
+        return $milestones === [] ? null : array_values(array_filter($milestones, fn ($m) => $m['name'] !== ''));
+    }
+
+    /**
+     * @param  list<array{name: string, tasks: list<string>}>|null  $template
+     */
+    public static function templateText(?array $template): string
+    {
+        return collect($template ?? [])->map(fn ($m) => '# '.$m['name'].collect($m['tasks'])->map(fn ($t) => "\n- {$t}")->implode(''))->implode("\n");
     }
 
     /**

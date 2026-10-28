@@ -8,6 +8,7 @@ use App\Http\Requests\Proposals\ProposalRequest;
 use App\Models\CompanySetting;
 use App\Models\Customer;
 use App\Models\Lead;
+use App\Models\Project;
 use App\Models\Proposal;
 use App\Models\ServicePackage;
 use App\Proposals\ProposalChecks;
@@ -47,11 +48,16 @@ class ProposalController extends Controller
     public function create(Request $request): View
     {
         $this->authorize('create', Proposal::class);
+        // A change request for an existing project goes to that project's client.
+        $project = $request->integer('project_id') ? Project::query()->with('proposal')->find($request->integer('project_id')) : null;
 
         return view('proposals.form', [
+            'project' => $project,
             'proposal' => new Proposal([
-                'lead_id' => $request->integer('lead_id') ?: null,
-                'customer_id' => $request->integer('customer_id') ?: null,
+                'project_id' => $project?->id,
+                'title' => $project ? "Change request: {$project->name}" : null,
+                'lead_id' => $project ? ($project->customer_id ? null : $project->proposal?->lead_id) : ($request->integer('lead_id') ?: null),
+                'customer_id' => $project ? $project->customer_id : ($request->integer('customer_id') ?: null),
                 'payment_terms' => config('company_os.proposals.default_payment_terms'),
                 'expires_at' => now()->addDays((int) config('company_os.proposals.default_valid_days')),
             ]),
@@ -73,7 +79,7 @@ class ProposalController extends Controller
     public function show(Proposal $proposal): View
     {
         $this->authorize('view', $proposal);
-        $proposal->load(['items', 'events', 'lead', 'customer', 'servicePackage', 'approvalRequest', 'creatorUser:id,name', 'creatorAgent:id,name']);
+        $proposal->load(['items', 'events', 'lead', 'customer', 'servicePackage', 'approvalRequest', 'project', 'createdProject', 'creatorUser:id,name', 'creatorAgent:id,name']);
 
         return view('proposals.show', [
             'proposal' => $proposal,

@@ -6,6 +6,11 @@
     <form method="POST" action="{{ $editing ? route('proposals.update', $proposal) : route('proposals.store') }}" class="max-w-4xl space-y-6">
         @csrf
         @if ($editing) @method('PUT') @endif
+        @if (! $editing && ($project ?? null))
+            <input type="hidden" name="project_id" value="{{ $project->id }}">
+            <p class="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900">This is a change request for project <a class="underline" href="{{ route('projects.show', $project) }}">{{ $project->name }}</a>. It needs the founder's approval and the client's acceptance like any proposal; once accepted, its work and price are added to the project.</p>
+            <x-input-error for="project_id" />
+        @endif
 
         <section class="card space-y-5" aria-labelledby="who">
             <h2 id="who" class="font-semibold">Recipient and package</h2>

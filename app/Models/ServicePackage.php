@@ -15,6 +15,7 @@ class ServicePackage extends Model
         'description',
         'scope',
         'exclusions',
+        'delivery_template',
         'base_price_minor',
         'currency',
         'estimated_days',
@@ -27,6 +28,7 @@ class ServicePackage extends Model
         return [
             'scope' => 'array',
             'exclusions' => 'array',
+            'delivery_template' => 'array',
             'base_price_minor' => 'integer',
             'estimated_days' => 'integer',
             'revision_limit' => 'integer',

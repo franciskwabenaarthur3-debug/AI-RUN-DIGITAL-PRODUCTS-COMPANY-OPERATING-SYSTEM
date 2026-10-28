@@ -127,7 +127,51 @@ Defined in `App\Enums\ProposalStatus` and changed only by `App\Services\Proposal
    - **Manual**: the founder records that they sent it themselves and how; nothing is sent by Company OS.
    A failed send is recorded (`delivery_status = failed`, `send_failed` event), the approval is marked failed, and sending again needs a new approval. A crash mid-send leaves the approval in `needs_reconciliation`; check with the recipient before doing anything else.
    Sending logs a `proposal_sent` activity on the lead and moves it to contacted when its status allows.
-6. **Response.** A person records accepted, declined or changes requested, with the date and the evidence (for example the client's email). There is no agent tool for this, and repeating the same answer changes nothing. Accepting converts the lead to a customer once, when its status allows conversion. Project creation from accepted proposals comes in Phase 7.
+6. **Response.** A person records accepted, declined or changes requested, with the date and the evidence (for example the client's email). There is no agent tool for this, and repeating the same answer changes nothing. Accepting converts the lead to a customer once, when its status allows conversion, and creates the project (see below). Accepting a change request adds its work and price to its project instead.
 7. **New version.** From pending approval, approved, rejected, changes requested or expired. The current version, if it was waiting for approval or approved, is withdrawn and its approval invalidated. The copy is a draft with the package line re-priced at the package's current price and needs its own approval.
 8. **Withdraw.** Any version that is not finished. An open approval is invalidated. Withdrawing a sent proposal does not contact the recipient.
 9. **Expiry.** `company-os:expire-proposals` (hourly) expires sent proposals past their validity date.
+
+## Projects
+
+A project is created by `ProjectService::createFromProposal()` when a person records that the client accepted a proposal. Recording the same answer again changes nothing, the proposal row is locked while the project is created, and `projects.proposal_id` is unique, so a proposal has at most one project. Proposals accepted before Phase 7 get a **Create project** button on their page, which uses the same method.
+
+The project takes the proposal's title, price (as the budget), currency and customer. Its milestones and tasks come from the package's **delivery template** (Service packages → edit; one `# Milestone` line followed by its tasks), or from `company_os.projects.default_template` when the package has none. The package's estimated days are spread across the milestones as due dates (weekdays). Template tasks have no agent: a person marks them done on the project page. Tasks added later can go to a person or an agent; agent tasks run and are reviewed on the Tasks page as before. A milestone can be completed only when its tasks are completed or cancelled.
+
+Statuses are defined in `App\Enums\ProjectStatus`:
+
+| From | Next |
+| --- | --- |
+| created | planning, on_hold, cancelled |
+| planning | in_progress, blocked, on_hold, cancelled |
+| in_progress | internal_review, blocked, on_hold, cancelled |
+| internal_review | client_review, in_progress, blocked, on_hold, cancelled |
+| client_review | changes_requested, approved_for_release, blocked, on_hold, cancelled |
+| changes_requested | in_progress, blocked, on_hold, cancelled |
+| approved_for_release | delivered (only by a verified production release), in_progress, blocked, on_hold, cancelled |
+| blocked, on_hold | planning, in_progress, cancelled |
+| delivered | closed |
+| closed, cancelled | none |
+
+Gates: **client review** needs a verified staging release; **approved for release**, changes requested, blocked, on hold and cancelled need a note (for approval: the client's approval and where it is recorded); **delivered** is set only when a production release is verified; **closed** needs every handover checklist item done. Leaving approved for release cancels production releases that are waiting for, or hold, the founder's approval and invalidates those approvals.
+
+**Client feedback** is recorded as within or outside the agreed scope. Outside scope opens a new proposal marked as a change request for the project, addressed to the project's client. It needs the founder's approval and the client's acceptance like any proposal; when accepted it adds a "Change request" milestone and task and adds its price to the budget (when the currency matches). It does not create a second project.
+
+## Releases
+
+Company OS does not deploy anything or read the repository. People deploy with their own tools and record each release here (`ReleaseService`). Every release has a version (unique per project and environment), an optional commit or tag, a URL, release notes and a rollback plan, and gets the checks from `company_os.projects.release_checks`: four mandatory (automated tests, security scan, content review, backup) and three optional (accessibility, performance, cross-browser). A result of passed, failed or skipped needs evidence; mandatory checks cannot be skipped.
+
+| From | Next |
+| --- | --- |
+| draft | deployed (staging, recorded by a person), pending_approval (production, submit), cancelled |
+| pending_approval | approved (founder), draft (founder rejected), pending_approval (asked again after the approval expired or failed), cancelled |
+| approved | deployed (founder records it), pending_approval (asked again), cancelled |
+| deployed | verified, failed_verification, rolled_back |
+| failed_verification | verified (a later health check), rolled_back |
+| verified | rolled_back |
+
+**Staging** needs no approval: record the deployment, then run the health check or verify by hand. Checks on a staging release can be recorded while it is in use.
+
+**Production** can be submitted only when every mandatory check passed, the same version is verified on staging, and the project is approved for release. Submitting freezes the release and its check results and creates a high-risk `release.deploy_production` approval request whose payload is the version, environment, URL, commit, notes, rollback plan, staging release and every check result with its evidence. After the founder approves, only the founder can record the deployment, with a confirmation. At that moment every gate is checked again (no approval overrides a failed mandatory check) and `ApprovalService::execute()` recomputes the payload; any difference invalidates the approval, and the claim makes the record happen once.
+
+**Health check:** one HTTP GET of the release URL. A 2xx answer verifies the release; anything else, a redirect, a timeout or a refused address is recorded as failed verification. A verified production release moves the project to delivered. **Verify by hand** is for sites the check cannot reach and is not available after a failed check. **Rollback** records what a person did, following the rollback plan; it does not change the project status.

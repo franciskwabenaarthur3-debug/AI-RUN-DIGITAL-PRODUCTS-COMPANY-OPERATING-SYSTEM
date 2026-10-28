@@ -160,16 +160,23 @@ class LeadService
      * Convert a lead into a customer exactly once. Repeated or concurrent
      * calls return the customer created by the first one.
      */
-    public function convert(Lead $lead, User $actor): Customer
+    /**
+     * @param  bool  $acceptedProposal  the lead accepted a proposal, which also
+     *                                  allows conversion from new, researched or outreach drafted
+     */
+    public function convert(Lead $lead, User $actor, bool $acceptedProposal = false): Customer
     {
-        return DB::transaction(function () use ($lead, $actor) {
+        return DB::transaction(function () use ($lead, $actor, $acceptedProposal) {
             $lead = Lead::query()->lockForUpdate()->findOrFail($lead->id);
 
             if ($lead->customer_id !== null) {
                 return $lead->customer;
             }
 
-            if (! $lead->status->canTransitionTo(LeadStatus::Converted)) {
+            $allowed = $lead->status->canTransitionTo(LeadStatus::Converted)
+                || ($acceptedProposal && in_array($lead->status, [LeadStatus::New, LeadStatus::Researched, LeadStatus::OutreachDrafted], true));
+
+            if (! $allowed) {
                 throw new InvalidTransition("A lead in status {$lead->status->label()} cannot be converted.");
             }
 

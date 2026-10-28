@@ -1,14 +1,15 @@
 # Test report
 
-**Date:** 2026-10-28 · **Branch:** `phase-6-proposals`
+**Date:** 2026-10-28 · **Branch:** `phase-7-projects`
 **Environment:** PHP 8.3.6 (CLI), PostgreSQL 16.15, Node 22.22. CI runs PHP 8.2 + PostgreSQL 16.
 
 ## Results
 
 | Suite | Result |
 | --- | --- |
-| `php artisan test` (SQLite in-memory) | 254 passed, 1 skipped (the PostgreSQL-only trigger test) |
-| `php artisan test` (PostgreSQL 16) | 255 passed |
+| `php artisan test` (SQLite in-memory) | 299 passed, 1 skipped (the PostgreSQL-only trigger test) |
+| `php artisan test` (PostgreSQL 16) | 300 passed |
+| Browser (Playwright, Phase 7): a project page and a production release page with a failed mandatory check, at desktop width and at 390 px with no horizontal scroll | checked by screenshot |
 | Browser (Playwright, Phase 6): an approved proposal's page, the new-proposal form at desktop width, and the preview at 390 px with no horizontal scroll | checked by screenshot |
 | `vendor/bin/pint` | passed |
 | `npm run build` | passed |
@@ -54,12 +55,23 @@ Added in Phase 6:
 - **Pages:** form create with server-side prices (submitted prices and status ignored); form validation; viewers read-only and 403 on every change; submitted versions cannot be edited; only the founder sends, with confirmation and a note for manual sends; responses need evidence, a past date and confirmation; show, preview, edit, index (latest versions only), approval page link and preview, lead page list, dashboard counts.
 - **Agent tools:** `draft_proposal` uses package prices and recorded contacts and records the agent; price, discount, recipient, item and status fields are refused; opted-out leads refused; no sending tool exists and `request_approval` no longer accepts `send_proposal`; `validate_proposal` reports problems.
 
+Added in Phase 7:
+
+- **Mandatory acceptance case 5:** a failed mandatory test blocks production: submission is refused with the reason, no approval is requested, the founder cannot record a deployment through the service or the page, and the refusal is in the project history.
+- **Project creation:** an accepted proposal creates one project with the proposal's budget, customer and due date and the default template's milestones, tasks and due dates; repeated acceptance and repeated creation make no duplicates and the database refuses a second project per proposal; only accepted proposals become projects; tasks come from the package's delivery template, which round-trips through the package form; an accepted change request extends its project (milestone, budget, once) and creates no project, and must go to the project's client; proposals accepted before Phase 7 get a project from the button, once.
+- **Release gates:** mandatory checks cannot be skipped and results need evidence; production needs a verified staging release of the same version and the project approved for release; client review needs a verified staging release; a production release needs the founder's approval (operators refused as approvers and as deployers) and is recorded once; rejection returns it to draft and it can be submitted again; the release and its checks freeze once submitted; a release or check result changed in the database after approval invalidates the approval; a mandatory check failing after approval blocks the deployment without using the approval; leaving approved for release cancels open production releases and invalidates their approvals; versions unique per environment and a URL required; cancelling invalidates the approval.
+- **Health check:** a 2xx answer verifies a production release and marks the project delivered; errors, connection failures and redirects (not followed) fail verification, and a later check can pass; private, loopback, link-local and IPv6 loopback addresses, mixed public and private answers, credentials in the URL, non-http schemes and unresolvable hosts are refused without any request; private hosts can be allowed by config; manual verification is refused after a failed check; rollbacks are recorded once.
+- **Workflow:** status transitions and notes; delivered only from a verified release; closing needs the handover checklist; people complete their own tasks and cannot complete agent tasks; milestones complete only with their tasks done; tasks and deliverables cannot use another project's milestone; deliverable links create versions; project events are append-only.
+- **Pages:** project index and page sections; task page links to its project; viewers read-only and 403 on every change; operators move status, complete tasks, add tasks for people, tick the handover; links with credentials and non-http repository links refused; another project's task cannot be completed through this one (404); out-of-scope feedback opens a change-request proposal; the full staging-to-production release flow through the pages including the approval page; release form validation; dashboard counts and navigation.
+
 ## Known limitations
 
 - The Anthropic integration has not been run against the live API from this environment (no key is configured here). Run one small Research task after setting the key before relying on it.
 - Haiku is marked as not supporting web search until confirmed.
 - Proposal email delivery is recorded as the mail service's acceptance only; there are no bounce or delivery webhooks yet. Email sending has not been tried against a real mail service from this environment.
-- Mandatory acceptance cases 4 (customer record isolation) and 5 (failed tests block deployment) belong to later phases (customer portal, Phase 7 delivery).
+- Mandatory acceptance case 4 (customer record isolation) belongs to the customer portal phase.
+- Release check results are entered by people from their CI or scan reports; Company OS does not read CI or Git, and does not deploy. The health check is a single GET and does not check content.
+- A rollback after delivery is recorded on the release but does not move the project out of delivered.
 - Only seven tools are implemented, plus provider web search; the other catalog tools are refused as unimplemented.
 - The automated suite tests concurrency through nested and repeated claims and unique constraints; the parallel-process race above was run by hand, not in CI.
 - Approval decisions are immutable through the model and the unique constraint, but have no PostgreSQL trigger yet (audit logs do).
