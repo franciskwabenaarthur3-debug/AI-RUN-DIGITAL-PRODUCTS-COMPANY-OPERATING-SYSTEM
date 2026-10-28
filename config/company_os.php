@@ -14,11 +14,49 @@ return [
     'login_max_attempts' => (int) env('LOGIN_MAX_ATTEMPTS', 5),
 
     /*
+    | Two-step sign-in with an authenticator app. When required, a founder
+    | without it can only reach the account security page until it is set up.
+    */
+    /*
+    | Database backups (BackupService). Files go to a private folder outside
+    | the web root; copy them off the server as well (see
+    | docs/backup-recovery.md). The restore test needs an empty scratch
+    | database that is not the live one.
+    */
+    'backups' => [
+        'enabled' => (bool) env('BACKUP_ENABLED', true),
+        'path' => env('BACKUP_PATH', storage_path('app/private/backups')),
+        'pg_dump' => env('BACKUP_PG_DUMP', 'pg_dump'),
+        'pg_restore' => env('BACKUP_PG_RESTORE', 'pg_restore'),
+        'verify_database' => env('BACKUP_VERIFY_DATABASE'),
+        'verify_host' => env('BACKUP_VERIFY_HOST'),
+        'max_age_hours' => (int) env('BACKUP_MAX_AGE_HOURS', 26),
+        'verify_max_age_days' => (int) env('BACKUP_VERIFY_MAX_AGE_DAYS', 8),
+    ],
+
+    /*
+    | Monitoring: how long the scheduler and the queue worker may go unseen.
+    */
+    'monitoring' => [
+        'scheduler_stale_minutes' => 12,
+        'queue_stale_minutes' => 20,
+        'queue_backlog_minutes' => 15,
+    ],
+
+    'security' => [
+        'require_founder_two_factor' => (bool) env('SECURITY_REQUIRE_FOUNDER_TWO_FACTOR', true),
+        'two_factor_issuer' => env('SECURITY_TWO_FACTOR_ISSUER', env('APP_NAME', 'Company OS')),
+        'two_factor_max_attempts' => 5,
+        'pending_login_minutes' => 5,
+    ],
+
+    /*
     | Metadata keys whose values are never written to audit records or logs.
     */
     'redacted_keys' => [
         'password', 'password_confirmation', 'current_password', 'token', 'secret',
         'api_key', 'apikey', 'authorization', 'cookie', 'remember_token', 'billing_details',
+        'otp', 'recovery_code', 'two_factor_secret', 'two_factor_recovery_codes',
     ],
 
     /*

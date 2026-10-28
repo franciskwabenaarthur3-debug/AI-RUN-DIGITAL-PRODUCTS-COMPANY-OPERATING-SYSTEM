@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\User;
 use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,7 +31,7 @@ class SessionController extends Controller
             'is_active' => true,
         ];
 
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+        if (! Auth::validate($credentials)) {
             $request->hitRateLimiter();
             $this->audit->record('auth.login_failed', metadata: [
                 'email_hash' => hash('sha256', strtolower($credentials['email'])),
@@ -41,10 +42,30 @@ class SessionController extends Controller
 
         $request->clearRateLimiter();
         $request->session()->regenerate();
+        /** @var User $user */
+        $user = Auth::getLastAttempted();
 
-        $user = $request->user();
+        // The password is right; with two-step sign-in on, the session is
+        // only logged in after the code (TwoFactorChallengeController).
+        if ($user->hasTwoFactor()) {
+            $request->session()->put('two_factor_login', [
+                'user_id' => $user->id,
+                'remember' => $request->boolean('remember'),
+                'expires_at' => now()->addMinutes((int) config('company_os.security.pending_login_minutes'))->timestamp,
+            ]);
+
+            return redirect()->route('two-factor.challenge');
+        }
+
+        return self::completeLogin($request, $user, $request->boolean('remember'), $this->audit);
+    }
+
+    public static function completeLogin(Request $request, User $user, bool $remember, AuditLogger $audit, ?string $method = null): RedirectResponse
+    {
+        Auth::login($user, $remember);
+        $request->session()->regenerate();
         $user->forceFill(['last_login_at' => now()])->save();
-        $this->audit->record('auth.login', $user);
+        $audit->record('auth.login', $user, array_filter(['two_factor' => $method]), actor: $user);
 
         return redirect()->intended(route('dashboard'));
     }

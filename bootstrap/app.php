@@ -2,6 +2,8 @@
 
 use App\Http\Middleware\AssignCorrelationId;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\RequireTwoFactor;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -14,7 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(AssignCorrelationId::class);
-        $middleware->alias(['active' => EnsureUserIsActive::class]);
+        $middleware->append(SecurityHeaders::class);
+        $middleware->alias(['active' => EnsureUserIsActive::class, 'two-factor' => RequireTwoFactor::class]);
         $middleware->redirectGuestsTo(fn () => route('login'));
         $middleware->redirectUsersTo(fn () => route('dashboard'));
     })

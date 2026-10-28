@@ -1,14 +1,16 @@
 # Test report
 
-**Date:** 2026-10-28 · **Branch:** `phase-8-maintenance`
+**Date:** 2026-10-28 · **Branch:** `phase-9-pilot`
 **Environment:** PHP 8.3.6 (CLI), PostgreSQL 16.15, Node 22.22. CI runs PHP 8.2 + PostgreSQL 16.
 
 ## Results
 
 | Suite | Result |
 | --- | --- |
-| `php artisan test` (SQLite in-memory) | 322 passed, 1 skipped (the PostgreSQL-only trigger test) |
-| `php artisan test` (PostgreSQL 16) | 323 passed |
+| `php artisan test` (SQLite in-memory) | 357 passed, 2 skipped (the PostgreSQL-only trigger and backup tests) |
+| `php artisan test` (PostgreSQL 16) | 359 passed |
+| Backup and restore by hand (Phase 9, PostgreSQL 16, pg_dump 16.15): `company-os:backup` on the development database, `company-os:verify-backup` into an empty scratch database, then the app booted against the restored copy (`migrate:status` shows every migration; users and audit records read back) | passed: 12 key tables, counts identical |
+| Browser (Playwright, Phase 9): sign-in with two-step code, Account security setup with QR code, System page, at desktop width and 390 px with no horizontal scroll | checked by screenshot |
 | Browser (Playwright, Phase 8): maintenance list, plan, an in-progress visit with a risky finding awaiting approval, service report, alerts, operating report, AI costs and dashboard at desktop width; visit, reports, alerts and maintenance pages at 390 px with no horizontal scroll | checked by screenshot |
 | Browser (Playwright, Phase 7): a project page and a production release page with a failed mandatory check, at desktop width and at 390 px with no horizontal scroll | checked by screenshot |
 | Browser (Playwright, Phase 6): an approved proposal's page, the new-proposal form at desktop width, and the preview at 390 px with no horizontal scroll | checked by screenshot |
@@ -75,16 +77,28 @@ Added in Phase 8:
 - **Reports:** counts come from records (leads, accepted proposals and value, plans, overdue visits, contracted prices), with no revenue field, n/a for rates with no data, and revenue listed as not recorded; overdue visits appear in priorities; finished periods are stored once (daily, weekly on Mondays, monthly on the 1st) and the current period is refused; stored reports cannot change; the report tool is read-only.
 - **Pages:** plan created from the project page with prices in minor units; operators cannot edit plans; maintenance, plan, visit, approval (finding link and note), alerts, reports, stored report, costs and dashboard pages render; viewers can read maintenance but get 403 on visit actions, scheduling and reports, and see no priorities on the dashboard.
 
+Added in Phase 9:
+
+- **Mandatory acceptance cases 1 to 5** in one suite (`tests/Feature/Acceptance/MandatoryAcceptanceTest.php`): an agent has no way to send a proposal (no tool, sending prohibited, decision-only approvals refused) and an unapproved proposal cannot be sent by anyone; a proposal changed after approval is refused and its approval invalidated; a retried send is refused and one email exists; guests, deactivated accounts and other customers' nested URLs cannot reach a customer's records, billing details are founder-only and encrypted; a failed mandatory test blocks production with no approval possible.
+- **Pilot workflow** (`PilotWorkflowTest`): a test client from an agent-drafted proposal through founder approval and sending, acceptance recorded twice (one project), staging, client approval, founder-approved production release and health check to delivered, a maintenance plan, a scheduled visit (scheduler run twice), a completed visit with its service report, and the monthly report counting each step, with no failed or unreconciled approvals.
+- **Two-step sign-in:** RFC 6238 test values; one step of drift; codes work once; the password step alone does not sign in; wrong codes are refused and audited, five drop the pending sign-in; it expires after 5 minutes; a deactivated account cannot finish; recovery codes work once each and are stored as hashes; the secret is encrypted and absent from serialization and audit records; founders are held on Account security until it is set up and cannot turn it off; others turn it off with password and code; the console reset; password change needs the current password.
+- **Security:** headers on every response with no inline scripts allowed; no view contains an inline script or event handler; every signed-in route (over 80 method and URL pairs) refuses guests; only login, the two-step page and `/up` are public; session cookie settings; logout ends the session.
+- **Monitoring:** scheduler and worker heartbeats, staleness, queue backlog and failed jobs; backups must be recent and restore-tested; problems raise one alert per day; the System page for operators, with readiness and permissions for the founder only; viewers refused; the readiness check fails debug mode, insecure cookies and founders without two-step sign-in.
+- **Backups:** a failed backup is recorded with a critical alert; a failed backup cannot be restore-tested; on PostgreSQL (when `pg_dump` matches the server) a backup of a separate committed database is restored into a scratch database with identical counts, the file is `0600`, the live database is refused as a target and a changed file fails the checksum.
+
 ## Known limitations
 
 - The Anthropic integration has not been run against the live API from this environment (no key is configured here). Run one small Research task after setting the key before relying on it.
 - Haiku is marked as not supporting web search until confirmed.
 - Proposal email delivery is recorded as the mail service's acceptance only; there are no bounce or delivery webhooks yet. Email sending has not been tried against a real mail service from this environment.
-- Mandatory acceptance case 4 (customer record isolation) belongs to the customer portal phase.
+- Acceptance case 4 is tested for staff roles, guests, deactivated accounts and nested URLs; there are no client logins to test.
+- The real-client pilot and the production deployment have not happened: they are the founder's steps in [deployment](deployment.md). Nothing here has run on a production server.
+- The PostgreSQL backup test is skipped when the machine's `pg_dump` is older than the server; it ran here with 16.15.
+- Backups are not copied off the server by Company OS; that is a deployment step.
 - Release check results are entered by people from their CI or scan reports; Company OS does not read CI or Git, and does not deploy. The health check is a single GET and does not check content.
 - A rollback after delivery is recorded on the release but does not move the project out of delivered.
 - Nine tools are implemented, plus provider web search; the other catalog tools are refused as unimplemented.
 - Maintenance work itself (updates, backups, fixes) is done by people with their own tools; Company OS records it and runs only the health check. Alerts are in-app only. Invoices, payments, expenses other than AI usage and hosting costs are not recorded, so reports cannot show verified revenue or profit.
 - The automated suite tests concurrency through nested and repeated claims and unique constraints; the parallel-process race above was run by hand, not in CI.
 - Approval decisions are immutable through the model and the unique constraint, but have no PostgreSQL trigger yet (audit logs do).
-- No MFA yet. MySQL untested.
+- MySQL untested (backups support PostgreSQL and SQLite files only).

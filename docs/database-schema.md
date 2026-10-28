@@ -14,6 +14,10 @@ Only tables that exist are documented. Laravel's framework tables (`password_res
 | role | string(32), indexed, default `viewer` | `founder`, `operator`, `viewer`; not mass assignable |
 | is_active | boolean, default true | inactive users cannot log in and are logged out mid-session; not mass assignable |
 | last_login_at | timestamp, null | |
+| two_factor_secret | text, null | encrypted; hidden from serialization |
+| two_factor_recovery_codes | text, null | encrypted list of SHA-256 hashes of unused codes |
+| two_factor_confirmed_at | timestamp, null | set when two-step sign-in is on |
+| two_factor_last_step | bigint, null | last accepted time step, so a code works once |
 | remember_token, timestamps | | |
 
 ## company_settings
@@ -361,3 +365,11 @@ One visit. `maintenance_plan_id`, `project_id`, `title`, `status` (scheduled, in
 ## operating_reports
 
 `period` (daily, weekly, monthly), `period_start` (unique with the period), `period_end`, `data` (json, the report as built), `generated_at`. Cannot change or be deleted (model guard).
+
+## system_heartbeats
+
+`name` (unique: `scheduler`, `queue`), `last_seen_at`, `detail`. Written by `company-os:heartbeat` (scheduler) and the `QueueHeartbeat` job (worker).
+
+## backups
+
+`filename`, `driver`, `status` (running, succeeded, failed), `size_bytes`, `sha256`, `table_counts` (rows per key table when the backup was made), `error`, `started_at`, `finished_at`, `verify_status` (passed, failed), `verify_detail` (expected and restored counts, or the error), `verified_at`.

@@ -75,7 +75,7 @@ class MaintenanceService
                 'service_interval' => MaintenanceFrequency::from($data['service_interval']),
                 'amount_minor' => $data['amount_minor'],
                 'currency' => $data['currency'],
-                'checklist' => $data['checklist'] ?: config('company_os.maintenance.default_checklist'),
+                'checklist' => ($data['checklist'] ?? null) ?: config('company_os.maintenance.default_checklist'),
                 'next_service_at' => $data['next_service_at'] ?? today()->toDateString(),
                 'term_ends_at' => $data['term_ends_at'] ?? today()->addYear()->toDateString(),
                 'status' => MaintenancePlanStatus::Active,

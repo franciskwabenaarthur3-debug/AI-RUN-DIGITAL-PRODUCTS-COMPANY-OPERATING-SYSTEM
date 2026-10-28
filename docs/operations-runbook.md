@@ -8,11 +8,15 @@ Covers what exists today. Deployment and backup procedures will be added with th
 | --- | --- | --- |
 | Web | `php artisan serve` locally; PHP-FPM behind a web server in production | The app |
 | Queue worker | `php artisan queue:work --tries=1 --timeout=900` | Runs agent tasks (`RunAgentTask`) and approved tool calls (`ExecuteApprovedAction`). Use a process manager (e.g. Supervisor) to restart it |
-| Scheduler | cron: `* * * * * php /path/to/artisan schedule:run` (locally `php artisan schedule:work`) | Runs `company-os:recover-stale-runs` and `company-os:expire-approvals` every five minutes, `company-os:expire-proposals` and `company-os:raise-alerts` hourly, `company-os:generate-reports` daily at 00:30 and `company-os:schedule-maintenance` daily at 01:00 |
+| Scheduler | cron: `* * * * * php /path/to/artisan schedule:run` (locally `php artisan schedule:work`) | Runs `company-os:recover-stale-runs` and `company-os:expire-approvals` every five minutes, `company-os:expire-proposals` and `company-os:raise-alerts` hourly, `company-os:generate-reports` daily at 00:30 and `company-os:schedule-maintenance` daily at 01:00, `company-os:heartbeat` every five minutes, `company-os:check-system` hourly, `company-os:backup` daily at 02:00 and `company-os:verify-backup` on Sundays at 03:00 (when `BACKUP_VERIFY_DATABASE` is set) |
 
 `--tries=1` matters: the task runner decides retries itself, so the queue must not retry jobs on its own.
 
 ## Routine checks
+
+- **System page (daily):** every line should be OK. Anything else, except the scheduler, also raises an alert once a day. If the scheduler line fails, the cron entry or the server is down: nothing else (alerts, backups, maintenance scheduling, approval expiry) runs until it is fixed.
+- **External uptime monitor:** point a free uptime service at `https://your-domain/up`; it answers 200 while the app can boot. It is the only check that works when the server itself is down.
+- **Before the pilot and after any configuration change:** run `php artisan company-os:readiness` on the server. It exits with an error while any item fails and lists every account and every agent's granted tools for review.
 
 - **Dashboard → Tasks by status / failed runs:** a growing failed count means an agent or runtime problem. Open the task to see each run's error code and message.
 - **Agents page:** runs and failed runs per agent.
@@ -80,6 +84,16 @@ Blocked tasks carry the reason in their failure message (disabled agent, unavail
 
 - **Alerts** are raised by the hourly sweep and by maintenance actions, one per condition, and shown on the Alerts page and in the menu badge. Acknowledging hides an alert; the same condition does not raise it again. Nothing is emailed, so check the page daily.
 - **Reports** are computed from Company OS records only. The Reports page shows the current period live; the scheduled job stores yesterday's report every day, last week's on Mondays and last month's on the 1st, once. Paid invoices, expenses other than AI usage, hosting costs and support issues are not recorded, so they are listed as not reported rather than estimated. Recommended priorities come from fixed rules and are advisory.
+
+## Sign-in problems
+
+- **Lost phone, recovery codes available:** sign in with a recovery code, then on Account security turn it off and on again (others), or make new recovery codes. Founders keep it on: after using a recovery code, set up the new phone by having the server reset it (below) and scanning again.
+- **Lost phone and recovery codes:** confirm it is really the person, then on the server run `php artisan company-os:reset-two-factor their@email`. It is audited. Founders must set it up again before doing anything else.
+- **Codes are always wrong:** the phone's clock is probably off; turn on automatic time. One 30-second step of drift is allowed.
+
+## Backups
+
+See [backup and recovery](backup-recovery.md). A failed backup or restore test raises a critical alert and shows on the System page.
 
 ## Approvals needing reconciliation
 
