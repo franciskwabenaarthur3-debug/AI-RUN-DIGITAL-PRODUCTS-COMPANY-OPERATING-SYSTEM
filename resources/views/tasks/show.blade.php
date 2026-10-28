@@ -70,6 +70,30 @@
                 </section>
             @endif
 
+            @if ($toolCalls->isNotEmpty())
+                <section class="card" aria-labelledby="tool-calls">
+                    <h2 id="tool-calls" class="mb-4 font-semibold">Tool calls</h2>
+                    <ol class="space-y-3 text-sm">
+                        @foreach ($toolCalls as $call)
+                            <li class="rounded-md border border-zinc-200 p-3">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="font-mono text-xs font-medium">{{ $call->tool_name }}</span>
+                                    <x-status-badge :status="$call->status" />
+                                    <span class="text-xs text-zinc-500">{{ $call->started_at?->format('M j, H:i:s') }}</span>
+                                    @if ($call->approval_request_id)
+                                        <a href="{{ route('approvals.show', $call->approval_request_id) }}" class="text-xs text-emerald-700 underline">Approval #{{ $call->approval_request_id }}</a>
+                                    @endif
+                                </div>
+                                @if ($call->error_code)
+                                    <p class="mt-1 text-sm text-red-800"><span class="font-mono text-xs">{{ $call->error_code }}</span> {{ $call->error_message }}</p>
+                                @endif
+                                <details class="mt-2"><summary class="cursor-pointer text-emerald-700">Input{{ $call->result_summary ? ' and result' : '' }}</summary><pre class="mt-2 overflow-x-auto whitespace-pre-wrap text-xs">{{ json_encode(['input' => $call->input_summary, 'result' => $call->result_summary], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre></details>
+                            </li>
+                        @endforeach
+                    </ol>
+                </section>
+            @endif
+
             <section class="card" aria-labelledby="runs">
                 <h2 id="runs" class="mb-4 font-semibold">Execution history</h2>
                 @if ($runs->isEmpty())

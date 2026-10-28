@@ -55,6 +55,10 @@
             </ul>
         @endif
         <p class="mt-3 text-sm {{ $failedRuns ? 'text-red-700' : 'text-zinc-600' }}">{{ $failedRuns }} failed agent run{{ $failedRuns === 1 ? '' : 's' }} in the last 7 days.</p>
+        <p class="mt-1 text-sm"><a href="{{ route('approvals.index', ['status' => 'pending']) }}" class="{{ $pendingApprovals ? 'font-medium text-amber-800' : 'text-zinc-600' }} hover:underline">{{ $pendingApprovals }} approval request{{ $pendingApprovals === 1 ? '' : 's' }} waiting for a decision.</a></p>
+        @if ($reconcileApprovals)
+            <p class="mt-1 text-sm"><a href="{{ route('approvals.index', ['status' => 'needs_reconciliation']) }}" class="font-medium text-red-700 hover:underline">{{ $reconcileApprovals }} approved action{{ $reconcileApprovals === 1 ? '' : 's' }} with an unknown outcome need reconciling.</a></p>
+        @endif
     </section>
 
     <div class="grid gap-6 lg:grid-cols-2">

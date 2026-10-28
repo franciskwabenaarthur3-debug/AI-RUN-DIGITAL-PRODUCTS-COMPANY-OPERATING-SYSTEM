@@ -55,7 +55,7 @@ Defined in `App\Enums\TaskStatus`; changed only by `TaskService` (people) and `T
 | queued | running, blocked, cancelled |
 | running | completed, awaiting_review, awaiting_approval, failed, blocked, queued (automatic retry) |
 | awaiting_review | completed (accept), failed (reject with reason), cancelled |
-| awaiting_approval | completed, failed, cancelled (used from Phase 4) |
+| awaiting_approval | completed, failed, cancelled (reserved; approvals currently wait on their own, without holding the task) |
 | blocked | queued, cancelled |
 | failed | queued (manual retry), cancelled |
 | completed, cancelled | none |
@@ -81,3 +81,27 @@ A running task cannot be cancelled; cancel it after the run ends, or disable the
 ### Manual actions
 
 Retry (failed/blocked → queued, resets automatic retries), cancel (with confirmation), accept or reject a reviewed result. All are audited and limited to founders and operators.
+
+## Tool calls
+
+1. A runtime calls a tool through the `ToolInvoker` it was given for the run.
+2. `ToolGateway` checks, in order: prohibited action, known and implemented tool, agent enabled, company not paused, permission granted, input valid with no unknown fields. Any refusal is stored as a `denied` tool execution with a code and audited.
+3. The idempotency key is SHA-256 of run id, tool and canonical input. If an execution with that key exists, it is returned and nothing runs again.
+4. Under a lock on the run row, the per-run call cap is checked and the execution row is inserted.
+5. **Level 1:** the tool runs (outside the gateway's transaction) and the execution becomes `succeeded` or `failed`.
+6. **Level 2:** in the same transaction, an approval request is created with the exact input as its payload; the execution waits in `awaiting_approval`. The run continues; its output reports the pending call.
+
+## Approvals
+
+| From | Next |
+| --- | --- |
+| pending | approved, rejected (founder, reason required), expired (past `expires_at`), invalidated (snapshot no longer matches its hash) |
+| approved | executing (claimed), expired, invalidated (payload mismatch), failed (agent disabled or permission revoked before execution) |
+| executing | executed, failed, needs_reconciliation (no outcome after `APPROVALS_RECONCILE_AFTER_MINUTES`) |
+| rejected, expired, invalidated, executed, failed, needs_reconciliation | none: a new attempt needs a new request |
+
+- **Request:** `ApprovalService::request()` stores the payload snapshot, its hash, reason, risk, rollback plan, evidence and expiry. The same idempotency key returns the same request; reusing a key with a different payload is an error.
+- **Decide:** approval center (`/approvals`). Only an active founder sees the forms, and `ApprovalService::decide()` refuses anyone else (`wrong_approver`, audited). Approving needs an explicit confirmation; rejecting needs a reason. The decision row is immutable and unique per request. Rejection or expiry closes the waiting tool execution as `denied`.
+- **Execute:** after an approval commits, an `ExecuteApprovedAction` job runs. The gateway re-checks the pause (holds the action until resume), agent status and permission (abandons the approval). `ApprovalService::execute()` then locks the request and refuses anything but a valid, unexpired approval whose decision and stored hash both match the payload about to run; on a mismatch it invalidates the approval. It sets `executing`, commits, runs the side effect outside the transaction, and records `executed` or `failed`. Duplicate jobs find the request already executing or executed and do nothing.
+- **Sweep:** `company-os:expire-approvals` (every five minutes) expires open requests past their deadline and flags stale `executing` requests as `needs_reconciliation`.
+- **Decision-only requests** (`agent.*` action types, from the `request_approval` tool) have no executor. Approving them records the decision; a person performs the action.

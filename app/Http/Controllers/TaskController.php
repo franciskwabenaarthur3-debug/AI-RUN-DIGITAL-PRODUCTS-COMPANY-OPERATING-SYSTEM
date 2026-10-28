@@ -9,6 +9,7 @@ use App\Http\Requests\Tasks\StoreTaskRequest;
 use App\Models\Agent;
 use App\Models\CompanySetting;
 use App\Models\Task;
+use App\Models\ToolExecution;
 use App\Services\TaskService;
 use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
@@ -102,6 +103,7 @@ class TaskController extends Controller
         return view('tasks.show', [
             'task' => $task->load(['agent', 'parent:id,title', 'dependencies:id,title,status', 'dependents:id,title,status', 'children:id,title,status,parent_task_id']),
             'runs' => $runs,
+            'toolCalls' => ToolExecution::query()->whereIn('agent_run_id', $runs->pluck('id'))->orderBy('id')->get(),
             'cost' => Money::format($estimated, $currency),
             'tokens' => $runs->flatMap->usage->sum(fn ($u) => $u->input_tokens + $u->output_tokens),
         ]);

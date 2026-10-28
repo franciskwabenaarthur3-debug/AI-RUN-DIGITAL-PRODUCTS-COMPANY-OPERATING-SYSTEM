@@ -4,7 +4,7 @@ namespace App\Agents;
 
 /**
  * The fixed list of tools agents may be granted. Agents cannot define new
- * tools; execution through a policy-checked gateway arrives in Phase 4.
+ * tools, and every call goes through App\Agents\Tools\ToolGateway.
  */
 final class ToolCatalog
 {
@@ -31,6 +31,35 @@ final class ToolCatalog
         'schedule_maintenance_task' => ['Schedule a maintenance task', 1],
         'generate_operating_report' => ['Generate an internal operating report', 1],
     ];
+
+    /**
+     * Level 3: never executable by an agent, whatever permissions or
+     * approvals say. Calls are refused and audited.
+     *
+     * @var list<string>
+     */
+    public const PROHIBITED = [
+        'execute_shell',
+        'run_sql',
+        'read_secrets',
+        'grant_permission',
+        'approve_request',
+        'transfer_funds',
+        'issue_refund',
+        'delete_records',
+        'deploy_production',
+        'send_external_message',
+    ];
+
+    public static function isProhibited(string $tool): bool
+    {
+        return in_array($tool, self::PROHIBITED, true);
+    }
+
+    public static function requiresApproval(string $tool): bool
+    {
+        return (self::TOOLS[$tool][1] ?? 2) >= 2;
+    }
 
     public static function exists(string $tool): bool
     {

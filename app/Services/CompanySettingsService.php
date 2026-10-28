@@ -11,6 +11,7 @@ class CompanySettingsService
     public function __construct(
         private readonly AuditLogger $audit,
         private readonly TaskService $tasks,
+        private readonly ApprovalService $approvals,
     ) {}
 
     /**
@@ -40,9 +41,10 @@ class CompanySettingsService
             $settings->save();
             $this->audit->record('settings.updated', $settings, ['changes' => $changes]);
 
-            // Lifting the emergency pause resumes tasks left waiting in the queue.
+            // Lifting the emergency pause resumes queued tasks and approved tool calls.
             if (isset($changes['operating_status']) && ! $settings->isPaused()) {
                 $this->tasks->dispatchQueued();
+                $this->approvals->dispatchApproved();
             }
 
             return $settings;

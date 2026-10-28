@@ -2,7 +2,7 @@
 
 An AI-assisted operating system for a small digital products company (websites, WordPress work, maintenance, digital products). The founder stays in control: AI agents will work through registered tools, persisted tasks and enforceable approvals, never through unrestricted access.
 
-**Status: Phase 3 (agent infrastructure).** What exists today is listed below. Nothing else should be assumed to work yet.
+**Status: Phase 4 (governance: approvals and tool gateway).** What exists today is listed below. Nothing else should be assumed to work yet.
 
 | Area | State |
 | --- | --- |
@@ -10,7 +10,7 @@ An AI-assisted operating system for a small digital products company (websites, 
 | PostgreSQL configuration (SQLite in-memory for fast tests) | Done |
 | Session login/logout, rate limiting, deactivated-user lockout, no public registration | Done |
 | Roles: founder, operator, viewer | Done |
-| Company settings (currency, timezone, AI budget limit, approval policy, emergency pause flag) | Done; budget and pause are stored but not yet enforced (no agents exist yet) |
+| Company settings (currency, timezone, AI budget limit, approval policy, emergency pause flag) | Done; the pause is enforced on agent runs and tool calls, and the budget is checked before paid runs (none exist yet) |
 | Service packages: create, edit, deactivate (founder only), prices in minor units | Done |
 | Leads: search, filters, pagination, create/edit, research evidence, activity history, follow-ups | Done |
 | Lead status workflow with enforced transitions, duplicate detection (email + website domain), opt-out | Done |
@@ -22,7 +22,11 @@ An AI-assisted operating system for a small digital products company (websites, 
 | Tasks: lifecycle state machine, dependencies, review, retry, cancel, execution history and cost | Done |
 | Task runner: atomic claim, step/token/deadline/budget limits, bounded retries, structured output validation, stale-run recovery | Done |
 | Deterministic mock agent runtime | Done (no real AI provider yet) |
-| Tool gateway, approvals, AI provider, proposals, projects, maintenance | Not started (Phases 4 to 8) |
+| Tool gateway: prohibited actions, permissions, input validation, idempotency, per-run call caps, audit of every call | Done |
+| Tools: create lead, update lead status, create subtask, request approval | Done; other catalog tools are refused until built |
+| Approval engine: payload snapshot and hash, expiry, founder-only immutable decisions, atomic execution claim, reconciliation flag | Done |
+| Approval center; tool calls on task pages; pending approvals on the dashboard | Done |
+| AI provider, proposals, projects, maintenance | Not started (Phases 5 to 8) |
 
 ## Requirements
 
@@ -57,7 +61,7 @@ For local-only demo data (a founder `founder@example.test` / `local-password-123
 php artisan db:seed --class=LocalDemoSeeder   # refuses to run outside local/testing
 ```
 
-`composer dev` runs the web server, queue worker, log tail and Vite together. Agent tasks run on the queue, so a worker must be running (`php artisan queue:work`), and the scheduler (`php artisan schedule:work` locally, or a cron entry for `schedule:run` in production) recovers runs lost by crashed workers.
+`composer dev` runs the web server, queue worker, log tail and Vite together. Agent tasks run on the queue, so a worker must be running (`php artisan queue:work`), and the scheduler (`php artisan schedule:work` locally, or a cron entry for `schedule:run` in production) recovers runs lost by crashed workers and expires old approval requests.
 
 ## Tests
 

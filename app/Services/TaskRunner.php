@@ -9,6 +9,9 @@ use App\Agents\Runtime\RunResult;
 use App\Agents\Runtime\RuntimeFailure;
 use App\Agents\Runtime\RuntimeRegistry;
 use App\Agents\Runtime\UsageRecord;
+use App\Agents\Tools\ToolContext;
+use App\Agents\Tools\ToolGateway;
+use App\Agents\Tools\ToolInvoker;
 use App\Enums\AgentRunStatus;
 use App\Enums\TaskStatus;
 use App\Models\AgentRun;
@@ -46,6 +49,7 @@ class TaskRunner
         private readonly RuntimeRegistry $runtimes,
         private readonly TaskService $tasks,
         private readonly AuditLogger $audit,
+        private readonly ToolGateway $gateway,
     ) {}
 
     public function run(int $taskId): string
@@ -154,6 +158,8 @@ class TaskRunner
             $task->attempts = $attempt;
             $task->status = TaskStatus::Running;
             $task->save();
+
+            $request->tools = new ToolInvoker($this->gateway, new ToolContext($agent, $run, $task));
 
             return [$run, $runtime, $request];
         });

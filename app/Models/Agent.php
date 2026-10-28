@@ -29,6 +29,7 @@ class Agent extends Model
         'max_retries',
         'timeout_seconds',
         'max_tokens_per_run',
+        'max_tool_calls_per_run',
         'monthly_budget_minor',
         'review_required',
     ];
@@ -47,6 +48,7 @@ class Agent extends Model
             'max_retries' => 'integer',
             'timeout_seconds' => 'integer',
             'max_tokens_per_run' => 'integer',
+            'max_tool_calls_per_run' => 'integer',
             'monthly_budget_minor' => 'integer',
             'review_required' => 'boolean',
         ];

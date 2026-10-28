@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Enums\AgentRunStatus;
+use App\Enums\ApprovalStatus;
 use App\Enums\CustomerStatus;
 use App\Enums\LeadStatus;
 use App\Models\AgentRun;
+use App\Models\ApprovalRequest;
 use App\Models\AuditLog;
 use App\Models\CompanySetting;
 use App\Models\Customer;
@@ -33,6 +35,8 @@ class DashboardController extends Controller
             'customerCount' => Customer::query()->where('status', CustomerStatus::Active)->count(),
             'tasksByStatus' => Task::query()->selectRaw('status, COUNT(*) as total')->groupBy('status')->pluck('total', 'status'),
             'failedRuns' => AgentRun::query()->where('status', AgentRunStatus::Failed)->where('created_at', '>=', now()->subDays(7))->count(),
+            'pendingApprovals' => ApprovalRequest::query()->where('status', ApprovalStatus::Pending)->where('expires_at', '>', now())->count(),
+            'reconcileApprovals' => ApprovalRequest::query()->where('status', ApprovalStatus::NeedsReconciliation)->count(),
             'aiSpent' => Money::format(ModelUsage::companySpentThisMonthMinor(), $settings->default_currency),
             'settingsReviewed' => AuditLog::query()->where('action', 'settings.updated')->exists(),
             'aiBudget' => Money::format($settings->monthly_ai_budget_minor, $settings->default_currency),

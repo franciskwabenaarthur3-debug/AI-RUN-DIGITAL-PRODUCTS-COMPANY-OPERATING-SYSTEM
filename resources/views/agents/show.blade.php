@@ -27,6 +27,7 @@
                     <div><dt class="text-zinc-500">Instructions version</dt><dd>{{ $agent->instructions_version }}</dd></div>
                     <div><dt class="text-zinc-500">Max steps per run</dt><dd>{{ $agent->max_steps }}</dd></div>
                     <div><dt class="text-zinc-500">Max tokens per run</dt><dd>{{ number_format($agent->max_tokens_per_run) }}</dd></div>
+                    <div><dt class="text-zinc-500">Max tool calls per run</dt><dd>{{ $agent->max_tool_calls_per_run }}</dd></div>
                     <div><dt class="text-zinc-500">Timeout</dt><dd>{{ $agent->timeout_seconds }} s</dd></div>
                     <div><dt class="text-zinc-500">Automatic retries</dt><dd>{{ $agent->max_retries }}</dd></div>
                     <div><dt class="text-zinc-500">Results need review</dt><dd>{{ $agent->review_required ? 'Yes' : 'No' }}</dd></div>

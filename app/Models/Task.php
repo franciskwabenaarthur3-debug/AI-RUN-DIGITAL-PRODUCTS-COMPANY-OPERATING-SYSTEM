@@ -91,6 +91,10 @@ class Task extends Model
             return User::query()->whereKey($this->created_by_id)->value('name') ?? 'User #'.$this->created_by_id;
         }
 
+        if ($this->created_by_type === 'agent' && $this->created_by_id) {
+            return Agent::query()->whereKey($this->created_by_id)->value('name') ?? 'Agent #'.$this->created_by_id;
+        }
+
         return $this->created_by_type;
     }
 }

@@ -123,6 +123,7 @@ Append-only history (model refuses update/delete). Index `(lead_id, id)`.
 | configuration | json, null | reserved for runtime settings |
 | status | string(16), indexed | `enabled` / `disabled`; default disabled; founder-only |
 | max_steps, max_retries, timeout_seconds, max_tokens_per_run | integers | enforced limits |
+| max_tool_calls_per_run | smallint, default 20 | tool calls allowed per run, enforced by the gateway |
 | monthly_budget_minor | bigint | per-agent budget for paid runtimes |
 | review_required | boolean | results go to awaiting_review |
 
@@ -182,3 +183,46 @@ Composite primary key `(task_id, depends_on_task_id)`, both FK tasks, cascade.
 | created_at | timestamp, indexed | index `(agent_id, created_at)` for monthly sums |
 
 Budget checks use `actual_cost_minor` when present, otherwise the estimate.
+
+## approval_requests
+
+Written only by `ApprovalService`. The action and payload never change after creation (model guard); a database edit to the snapshot is detected because it no longer matches the hash.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| requested_by_agent_id, requested_by_user_id | FK, null | who asked |
+| task_id | FK, null | task the request came from |
+| action_type | string(64), indexed | tool name, or `agent.*` for decision-only requests |
+| resource_type, resource_id | string, bigint, null | target record, e.g. `lead`, 12 |
+| payload_snapshot | json | the exact payload shown to the approver |
+| payload_hash | char(64) | SHA-256 of canonical JSON of action, resource and payload |
+| reason, rollback_plan | text | |
+| risk_level | string(16) | low, medium, high |
+| evidence | json, null | list of strings |
+| status | string(24), indexed | pending, approved, rejected, expired, invalidated, executing, executed, failed, needs_reconciliation |
+| expires_at | timestamp, indexed | `APPROVALS_TTL_HOURS` after creation; applies to both the decision and the execution |
+| decided_at, execution_started_at, executed_at | timestamps, null | |
+| execution_result | json, null | redacted result or error |
+| idempotency_key | string(128), **unique** | the same request is never created twice |
+
+## approval_decisions
+
+Immutable (model guard). `approval_request_id` is **unique**, so the database refuses a second decision. Stores `approver_user_id`, `decision` (approved/rejected), optional `reason`, and the `payload_hash` that was approved.
+
+## tool_executions
+
+One row per tool call, including refused ones.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| agent_run_id | FK, null | the run that made the call |
+| agent_id | FK | |
+| tool_name | string(64), indexed | |
+| idempotency_key | string(128) | **unique with tool_name**: SHA-256 of run, tool and canonical input. Refused calls get a random `denied:` key |
+| status | string(24), indexed | running, succeeded, failed, denied, awaiting_approval |
+| input_hash | char(64) | |
+| input_summary, result_summary | json, null | redacted and size-limited |
+| external_reference | string, null | id of anything created outside the system |
+| approval_request_id | FK, null | for Level 2 calls |
+| error_code, error_message | string, text, null | see the runbook |
+| started_at, finished_at | timestamps | |
