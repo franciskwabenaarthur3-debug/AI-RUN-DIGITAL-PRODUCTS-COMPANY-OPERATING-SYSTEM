@@ -15,6 +15,7 @@ use App\Models\Lead;
 use App\Models\ModelUsage;
 use App\Models\ServicePackage;
 use App\Models\Task;
+use App\Services\AiBudgetMonitor;
 use App\Support\Money;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -37,9 +38,10 @@ class DashboardController extends Controller
             'failedRuns' => AgentRun::query()->where('status', AgentRunStatus::Failed)->where('created_at', '>=', now()->subDays(7))->count(),
             'pendingApprovals' => ApprovalRequest::query()->where('status', ApprovalStatus::Pending)->where('expires_at', '>', now())->count(),
             'reconcileApprovals' => ApprovalRequest::query()->where('status', ApprovalStatus::NeedsReconciliation)->count(),
-            'aiSpent' => Money::format(ModelUsage::companySpentThisMonthMinor(), $settings->default_currency),
+            'aiSpent' => Money::format(ModelUsage::companySpentThisMonthMinor(), config('company_os.ai.currency')),
+            'aiAlert' => app(AiBudgetMonitor::class)->status(),
             'settingsReviewed' => AuditLog::query()->where('action', 'settings.updated')->exists(),
-            'aiBudget' => Money::format($settings->monthly_ai_budget_minor, $settings->default_currency),
+            'aiBudget' => Money::format($settings->monthly_ai_budget_minor, config('company_os.ai.currency')),
             'recentAudit' => $user->can('viewAny', AuditLog::class)
                 ? AuditLog::query()->latest('id')->limit(8)->get()
                 : null,

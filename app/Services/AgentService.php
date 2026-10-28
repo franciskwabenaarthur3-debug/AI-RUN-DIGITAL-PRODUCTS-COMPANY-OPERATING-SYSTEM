@@ -32,6 +32,37 @@ class AgentService
         return $agent;
     }
 
+    /**
+     * Founder changes to the runtime, model and limits. Every changed
+     * field is audited with its old and new value.
+     *
+     * @param  array<string, mixed>  $config
+     */
+    public function configure(Agent $agent, array $config, User $actor): Agent
+    {
+        return DB::transaction(function () use ($agent, $config, $actor) {
+            $agent = Agent::query()->lockForUpdate()->findOrFail($agent->id);
+            $agent->fill(array_intersect_key($config, array_flip(self::CONFIGURABLE)));
+
+            $changes = [];
+            foreach ($agent->getDirty() as $field => $new) {
+                $changes[$field] = ['from' => $agent->getRawOriginal($field), 'to' => $new];
+            }
+
+            if ($changes !== []) {
+                $agent->save();
+                $this->audit->record('agent.configured', $agent, ['changes' => $changes], $actor);
+            }
+
+            return $agent;
+        });
+    }
+
+    public const CONFIGURABLE = [
+        'runtime', 'model_key', 'max_steps', 'max_retries', 'timeout_seconds',
+        'max_tokens_per_run', 'max_tool_calls_per_run', 'monthly_budget_minor',
+    ];
+
     public function setPermission(Agent $agent, string $tool, bool $allowed, User $actor): void
     {
         if (! ToolCatalog::exists($tool)) {

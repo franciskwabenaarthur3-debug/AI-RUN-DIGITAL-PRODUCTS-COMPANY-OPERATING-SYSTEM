@@ -33,6 +33,21 @@ class CreateProjectTaskTool extends BaseTool
         ];
     }
 
+    public function inputSchema(): array
+    {
+        return [
+            'type' => 'object',
+            'properties' => [
+                'title' => ['type' => 'string', 'maxLength' => 255],
+                'description' => ['type' => 'string', 'maxLength' => 5000],
+                'priority' => ['type' => 'string', 'enum' => array_map(fn ($p) => $p->value, TaskPriority::cases())],
+                'agent_id' => ['type' => 'integer', 'description' => 'Agent to assign; a person still queues the task'],
+            ],
+            'required' => ['title'],
+            'additionalProperties' => false,
+        ];
+    }
+
     public function handle(array $input, ToolContext $context): ToolResult
     {
         if (! $context->task) {

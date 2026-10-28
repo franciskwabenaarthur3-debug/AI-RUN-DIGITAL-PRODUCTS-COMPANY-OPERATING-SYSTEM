@@ -43,6 +43,7 @@ Route::middleware(['auth', 'active'])->group(function () {
     Route::get('agents', [AgentController::class, 'index'])->name('agents.index');
     Route::get('agents/{agent}', [AgentController::class, 'show'])->name('agents.show');
     Route::put('agents/{agent}/status', [AgentController::class, 'updateStatus'])->name('agents.status');
+    Route::put('agents/{agent}/configuration', [AgentController::class, 'updateConfiguration'])->name('agents.configuration');
     Route::put('agents/{agent}/permissions', [AgentController::class, 'updatePermissions'])->name('agents.permissions');
 
     Route::resource('tasks', TaskController::class)->only(['index', 'create', 'store', 'show']);

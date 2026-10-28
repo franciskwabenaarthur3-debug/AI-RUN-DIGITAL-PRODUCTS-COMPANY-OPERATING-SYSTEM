@@ -4,7 +4,7 @@ What agents are, what they may do, and how that is enforced. Enforcement is in a
 
 ## Agents
 
-Seven logical agents are registered by `AgentSeeder` (run by `php artisan db:seed`). They share one runtime today but have separate identities, limits, permissions, runs and usage records. All start **disabled**.
+Seven logical agents are registered by `AgentSeeder` (run by `php artisan db:seed`). They have separate identities, limits, permissions, runs and usage records. All start **disabled**.
 
 | Agent | Role | Default tools |
 | --- | --- | --- |
@@ -41,7 +41,10 @@ Re-running the seeder never resets a founder's changes to status or permissions.
 | `create_lead` | Creates a lead with source "research" | `source_reference` required; duplicates (email or domain) fail |
 | `update_lead_status` | Moves a lead through the workflow | Only researched, qualified, outreach drafted, disqualified, lost. Contacted, replied, converted and unsubscribed stay with people |
 | `create_project_task` | Creates a subtask of the current task | Created, not queued; a person queues it |
+| `draft_outreach` | Stores an outreach draft (channel, subject, body) on a lead's activity history | Refused for leads that are opted out or closed. Nothing is sent: a person sends it, after an approval if the agent asks for one |
 | `request_approval` | Asks the founder to decide on an action Company OS cannot perform (send outreach, send proposal, publish release, other) | Approving records the decision only; a person carries out the action |
+
+`search_prospects` has no internal implementation. On the `llm` runtime it controls the provider's web search: search is offered to the model only when the agent is granted `search_prospects` and the model supports it, at most `AI_WEB_SEARCH_MAX_USES` searches per call. Each search is recorded as a `search_prospects` tool execution with the query and `executed_by: anthropic`.
 
 The other catalog tools can be granted but are refused as unimplemented until they are built.
 
@@ -54,7 +57,7 @@ The other catalog tools can be granted but are refused as unimplemented until th
 | Timeout | `agents.timeout_seconds` | Deadline passed to the runtime; late results are rejected (`timeout`); runs left "running" past the deadline are recovered as `worker_lost` |
 | Automatic retries | `agents.max_retries` | Only retryable errors (timeouts, transient provider errors, lost workers) are retried, at most this many times, with exponential backoff |
 | Agent monthly budget | `agents.monthly_budget_minor` | For paid runtimes: blocked before the run if spent + maximum run cost would exceed it |
-| Company monthly AI budget | Settings → Monthly AI budget | Same check, company-wide. A budget of 0 means no paid runs |
+| Company monthly AI budget | Settings → Monthly AI budget (USD) | Same check, company-wide. A budget of 0 means no paid runs. When spend crosses the alert percentage (default 80%) or the budget, the dashboard says so and the audit log records it once per month |
 | Emergency pause | Settings → Operating status | Queued tasks are not started while paused; lifting the pause re-dispatches them |
 | Max tool calls per run | `agents.max_tool_calls_per_run` | Gateway refuses further calls in the run (`tool_call_limit`) |
 | Disabled agent | Agent status | Cannot be queued; a task queued before the agent was disabled is blocked when it reaches the runner |
@@ -72,5 +75,17 @@ By default agent results go to **awaiting review**, and a person accepts or reje
 
 ## Runtimes
 
-- `mock` is the only runtime today. It is deterministic, performs no real work and labels its output as mock. Its `use_tool` scenario makes the tool calls listed in the task input (`mock_tool_calls`) through the gateway, so the whole path can be exercised without a model. It is available only when `AGENTS_ALLOW_MOCK_RUNTIME` is true (default: local and testing only). Elsewhere, tasks for mock agents are blocked with an explanation.
-- Real model providers will be added as runtimes behind the AI gateway (Phase 5).
+Only a founder chooses an agent's runtime, model and limits (Agents → agent → Runtime, model and limits). Every change is audited with old and new values.
+
+- `mock` is deterministic, performs no real work and labels its output as mock. Its `use_tool` scenario makes the tool calls listed in the task input (`mock_tool_calls`) through the gateway, so the whole path can be exercised without a model. It is available only when `AGENTS_ALLOW_MOCK_RUNTIME` is true (default: local and testing only). Elsewhere, tasks for mock agents are blocked with an explanation.
+- `llm` calls a model through the AI gateway (`App\Ai`). It is registered only when `ANTHROPIC_API_KEY` is set; otherwise tasks for `llm` agents are blocked as "runtime not available".
+
+### The `llm` runtime
+
+- **Models** come from the catalog in `config/company_os.php` (`ai.models`): provider, model id, configuration version, prices, output cap, effort and web search support. Agents store a catalog key, so a model can be replaced in config without touching workflows. The model key and configuration version are stored on each successful run (`agent_runs.usage_metadata`).
+- **Instructions** are a fixed policy (`App\Agents\AgentInstructions::POLICY`) plus the role file `resources/agents/{role}/{instructions_version}.md`. Only Research and Sales have instruction files; other agents on `llm` fail with `instructions_missing`.
+- **Loop:** each step is one model call. The model may call only the tools the agent is granted (refused calls come back to it as errors, and are still recorded) and must finish by calling `submit_result`, whose input is validated against the output schema. A reply without it is nudged once, then fails. Steps, tokens, tool calls and the deadline are checked in code before every call.
+- **Untrusted content:** the task description and input are wrapped in tags and the policy tells the model they are data, not instructions. Tool results and search results are treated the same way. None of this is relied on for safety: permissions, limits and approvals are enforced by the gateway and runner whatever the model says.
+- **Lead context:** for `lead_ids` in the task input (up to 20), the model sees company, contact name, website, status, opt-out flag, score and notes. Email addresses and phone numbers are never sent to the provider.
+- **Nothing leaves the system:** there is no sending tool. The Sales Agent drafts with `draft_outreach` and may ask for approval to send; a person sends.
+- **Cost:** estimated from the token counts and web searches the provider reports, at the catalog price of the model that actually served the response (an unknown serving model is priced at the highest catalog rate). The actual cost column stays empty until provider billing is imported. Before a run, the budget check uses the most a run could cost (its output token cap at the output rate, plus its search allowance).

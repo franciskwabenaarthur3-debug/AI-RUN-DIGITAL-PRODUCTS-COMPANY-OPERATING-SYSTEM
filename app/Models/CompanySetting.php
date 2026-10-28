@@ -22,6 +22,7 @@ class CompanySetting extends Model
         'timezone' => 'UTC',
         'approval_policy' => 'strict',
         'monthly_ai_budget_minor' => 0,
+        'ai_budget_alert_percent' => 80,
         'operating_status' => 'active',
     ];
 
@@ -31,6 +32,7 @@ class CompanySetting extends Model
             'approval_policy' => ApprovalPolicy::class,
             'operating_status' => OperatingStatus::class,
             'monthly_ai_budget_minor' => 'integer',
+            'ai_budget_alert_percent' => 'integer',
         ];
     }
 

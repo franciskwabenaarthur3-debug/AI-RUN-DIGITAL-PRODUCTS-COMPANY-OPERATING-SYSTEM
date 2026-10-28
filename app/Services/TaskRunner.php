@@ -50,6 +50,7 @@ class TaskRunner
         private readonly TaskService $tasks,
         private readonly AuditLogger $audit,
         private readonly ToolGateway $gateway,
+        private readonly AiBudgetMonitor $budget,
     ) {}
 
     public function run(int $taskId): string
@@ -215,7 +216,7 @@ class TaskRunner
                 'status' => AgentRunStatus::Succeeded,
                 'finished_at' => now(),
                 'output' => $output,
-                'usage_metadata' => ['steps' => $result->steps, 'total_tokens' => $result->totalTokens()],
+                'usage_metadata' => ['steps' => $result->steps, 'total_tokens' => $result->totalTokens()] + $result->metadata,
             ])->save();
 
             $task->result = $output;
@@ -317,7 +318,13 @@ class TaskRunner
                 'output_tokens' => $u->outputTokens,
                 'estimated_cost_minor' => $u->estimatedCostMinor,
                 'currency' => $u->currency,
+                'provider_request_id' => $u->providerRequestId,
+                'web_search_requests' => $u->webSearchRequests,
             ]);
+        }
+
+        if ($usage !== []) {
+            $this->budget->check();
         }
     }
 }

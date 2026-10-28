@@ -15,7 +15,7 @@ class CompanySettingsService
     ) {}
 
     /**
-     * @param  array{company_name: string, default_currency: string, timezone: string, approval_policy: string, monthly_ai_budget: string, operating_status: string}  $input
+     * @param  array{company_name: string, default_currency: string, timezone: string, approval_policy: string, monthly_ai_budget: string, operating_status: string, ai_budget_alert_percent?: int|string}  $input
      */
     public function update(CompanySetting $settings, array $input): CompanySetting
     {
@@ -26,6 +26,7 @@ class CompanySettingsService
                 'timezone' => $input['timezone'],
                 'approval_policy' => $input['approval_policy'],
                 'monthly_ai_budget_minor' => Money::toMinor($input['monthly_ai_budget']),
+                'ai_budget_alert_percent' => (int) ($input['ai_budget_alert_percent'] ?? $settings->ai_budget_alert_percent),
                 'operating_status' => $input['operating_status'],
             ]);
 

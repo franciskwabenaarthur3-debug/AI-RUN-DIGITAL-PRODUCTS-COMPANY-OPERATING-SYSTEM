@@ -2,7 +2,7 @@
 
 An AI-assisted operating system for a small digital products company (websites, WordPress work, maintenance, digital products). The founder stays in control: AI agents will work through registered tools, persisted tasks and enforceable approvals, never through unrestricted access.
 
-**Status: Phase 4 (governance: approvals and tool gateway).** What exists today is listed below. Nothing else should be assumed to work yet.
+**Status: Phase 5 (AI gateway, Research and Sales agents).** What exists today is listed below. Nothing else should be assumed to work yet.
 
 | Area | State |
 | --- | --- |
@@ -10,7 +10,7 @@ An AI-assisted operating system for a small digital products company (websites, 
 | PostgreSQL configuration (SQLite in-memory for fast tests) | Done |
 | Session login/logout, rate limiting, deactivated-user lockout, no public registration | Done |
 | Roles: founder, operator, viewer | Done |
-| Company settings (currency, timezone, AI budget limit, approval policy, emergency pause flag) | Done; the pause is enforced on agent runs and tool calls, and the budget is checked before paid runs (none exist yet) |
+| Company settings (currency, timezone, AI budget limit in USD with an alert threshold, approval policy, emergency pause flag) | Done; the pause is enforced on agent runs and tool calls, and the budget is checked before every paid run |
 | Service packages: create, edit, deactivate (founder only), prices in minor units | Done |
 | Leads: search, filters, pagination, create/edit, research evidence, activity history, follow-ups | Done |
 | Lead status workflow with enforced transitions, duplicate detection (email + website domain), opt-out | Done |
@@ -21,12 +21,15 @@ An AI-assisted operating system for a small digital products company (websites, 
 | Agent registry (7 logical agents, disabled by default), founder-only enable/disable and tool permissions | Done |
 | Tasks: lifecycle state machine, dependencies, review, retry, cancel, execution history and cost | Done |
 | Task runner: atomic claim, step/token/deadline/budget limits, bounded retries, structured output validation, stale-run recovery | Done |
-| Deterministic mock agent runtime | Done (no real AI provider yet) |
+| Deterministic mock agent runtime | Done |
+| AI gateway: provider interface, versioned model catalog, timeouts, bounded retries, normalized provider errors, token and cost accounting, budget alerts | Done |
+| Anthropic Claude provider through the official PHP SDK (`llm` runtime), enabled only when `ANTHROPIC_API_KEY` is set | Done; tested against a fake transport, not yet against the live API |
+| Research Agent and Sales Agent instructions; founder UI for runtime, model and limits | Done |
 | Tool gateway: prohibited actions, permissions, input validation, idempotency, per-run call caps, audit of every call | Done |
-| Tools: create lead, update lead status, create subtask, request approval | Done; other catalog tools are refused until built |
+| Tools: create lead, update lead status, draft outreach (stored, never sent), create subtask, request approval; provider web search for agents granted `search_prospects` | Done; other catalog tools are refused until built |
 | Approval engine: payload snapshot and hash, expiry, founder-only immutable decisions, atomic execution claim, reconciliation flag | Done |
 | Approval center; tool calls on task pages; pending approvals on the dashboard | Done |
-| AI provider, proposals, projects, maintenance | Not started (Phases 5 to 8) |
+| Proposals, projects, maintenance | Not started (Phases 6 to 8) |
 
 ## Requirements
 
@@ -60,6 +63,8 @@ For local-only demo data (a founder `founder@example.test` / `local-password-123
 ```bash
 php artisan db:seed --class=LocalDemoSeeder   # refuses to run outside local/testing
 ```
+
+To let agents use a real model, set `ANTHROPIC_API_KEY` in `.env` (never commit it), then on an agent's page choose the `llm` runtime and a model. Without a key the `llm` runtime is not offered and nothing calls a provider.
 
 `composer dev` runs the web server, queue worker, log tail and Vite together. Agent tasks run on the queue, so a worker must be running (`php artisan queue:work`), and the scheduler (`php artisan schedule:work` locally, or a cron entry for `schedule:run` in production) recovers runs lost by crashed workers and expires old approval requests.
 

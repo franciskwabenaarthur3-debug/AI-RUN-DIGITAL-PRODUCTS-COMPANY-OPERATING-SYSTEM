@@ -34,6 +34,11 @@ class FakeReleaseTool extends BaseTool
         ];
     }
 
+    public function inputSchema(): array
+    {
+        return ['type' => 'object', 'properties' => ['version' => ['type' => 'string'], 'notes' => ['type' => 'string']], 'required' => ['version']];
+    }
+
     public function riskLevel(): RiskLevel
     {
         return RiskLevel::High;

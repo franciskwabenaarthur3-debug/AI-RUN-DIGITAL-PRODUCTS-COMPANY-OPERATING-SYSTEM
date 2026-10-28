@@ -69,6 +69,13 @@
                         @foreach ($activities as $activity)
                             <li class="border-l-2 border-emerald-600/40 pl-3">
                                 <p class="whitespace-pre-line">{{ $activity->description }}</p>
+                                @if ($activity->activity_type === 'outreach_drafted' && isset($activity->metadata['body']))
+                                    <div class="mt-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm">
+                                        <p class="text-xs font-semibold uppercase tracking-wide text-amber-900">Draft, not sent</p>
+                                        @if ($activity->metadata['subject'])<p class="mt-1 font-medium">{{ $activity->metadata['subject'] }}</p>@endif
+                                        <p class="mt-1 whitespace-pre-line">{{ $activity->metadata['body'] }}</p>
+                                    </div>
+                                @endif
                                 <p class="text-xs text-zinc-500">
                                     {{ str_replace('_', ' ', $activity->activity_type) }} · {{ $activity->actorName() }} ·
                                     <time datetime="{{ $activity->created_at->toIso8601String() }}">{{ $activity->created_at->format('M j, Y H:i') }}</time>

@@ -103,6 +103,18 @@ class CompanySettingsTest extends TestCase
             ->assertSessionHasErrors('monthly_ai_budget');
     }
 
+    public function test_ai_budget_alert_threshold_is_configurable(): void
+    {
+        $founder = User::factory()->founder()->create();
+
+        $this->actingAs($founder)->put('/settings', $this->validPayload(['ai_budget_alert_percent' => 0]))->assertSessionHasErrors('ai_budget_alert_percent');
+        $this->actingAs($founder)->put('/settings', $this->validPayload(['ai_budget_alert_percent' => 65]))->assertSessionHas('status');
+        $this->assertSame(65, CompanySetting::current()->ai_budget_alert_percent);
+
+        $this->actingAs($founder)->put('/settings', $this->validPayload());
+        $this->assertSame(65, CompanySetting::current()->ai_budget_alert_percent, 'Omitting the field keeps the saved value.');
+    }
+
     public function test_pausing_operations_shows_banner(): void
     {
         $founder = User::factory()->founder()->create();

@@ -23,6 +23,14 @@ interface Tool
     public function rules(): array;
 
     /**
+     * JSON Schema for the input, shown to models that call the tool. The
+     * gateway still validates against rules(); this only describes it.
+     *
+     * @return array<string, mixed>
+     */
+    public function inputSchema(): array;
+
+    /**
      * The record the action targets, for approval requests and audit.
      *
      * @param  array<string, mixed>  $input

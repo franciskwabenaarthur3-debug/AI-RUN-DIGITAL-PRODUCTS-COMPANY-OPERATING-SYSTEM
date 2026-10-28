@@ -37,6 +37,24 @@ class CreateLeadTool extends BaseTool
         ];
     }
 
+    public function inputSchema(): array
+    {
+        return [
+            'type' => 'object',
+            'properties' => [
+                'company_name' => ['type' => 'string', 'maxLength' => 255],
+                'contact_name' => ['type' => 'string', 'maxLength' => 255],
+                'email' => ['type' => 'string', 'description' => 'Only a published business address'],
+                'website' => ['type' => 'string', 'description' => 'e.g. example.com'],
+                'source_reference' => ['type' => 'string', 'description' => 'URL or citation where this information was found'],
+                'qualification_score' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 100],
+                'notes' => ['type' => 'string', 'maxLength' => 5000],
+            ],
+            'required' => ['company_name', 'source_reference'],
+            'additionalProperties' => false,
+        ];
+    }
+
     public function handle(array $input, ToolContext $context): ToolResult
     {
         $email = isset($input['email']) ? strtolower(trim($input['email'])) : null;

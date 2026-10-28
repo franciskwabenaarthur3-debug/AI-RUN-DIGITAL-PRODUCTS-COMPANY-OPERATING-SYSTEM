@@ -46,6 +46,24 @@ class RequestApprovalTool extends BaseTool
         ];
     }
 
+    public function inputSchema(): array
+    {
+        return [
+            'type' => 'object',
+            'properties' => [
+                'action' => ['type' => 'string', 'enum' => array_keys(self::ACTIONS)],
+                'summary' => ['type' => 'string', 'description' => 'Exactly what a person should do if approved', 'maxLength' => 5000],
+                'reason' => ['type' => 'string', 'maxLength' => 2000],
+                'risk_level' => ['type' => 'string', 'enum' => array_map(fn ($r) => $r->value, RiskLevel::cases())],
+                'rollback_plan' => ['type' => 'string', 'maxLength' => 2000],
+                'evidence' => ['type' => 'array', 'items' => ['type' => 'string'], 'maxItems' => 20],
+                'lead_id' => ['type' => 'integer'],
+            ],
+            'required' => ['action', 'summary', 'reason', 'risk_level', 'rollback_plan'],
+            'additionalProperties' => false,
+        ];
+    }
+
     public function handle(array $input, ToolContext $context): ToolResult
     {
         $resourceId = isset($input['lead_id']) ? (int) $input['lead_id'] : null;
