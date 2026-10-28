@@ -7,6 +7,7 @@ use App\Models\Concerns\Searchable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Customer extends Model
@@ -51,5 +52,10 @@ class Customer extends Model
     public function lead(): HasOne
     {
         return $this->hasOne(Lead::class);
+    }
+
+    public function proposals(): HasMany
+    {
+        return $this->hasMany(Proposal::class)->latest('id');
     }
 }

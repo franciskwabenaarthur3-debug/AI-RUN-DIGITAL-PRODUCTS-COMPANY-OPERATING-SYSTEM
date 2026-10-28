@@ -14,13 +14,13 @@ use Illuminate\Validation\Rule;
  * Asks the founder to decide on something the agent cannot do itself,
  * such as sending a drafted message. Approving records the decision only:
  * nothing in Company OS executes these actions yet, so a person carries
- * them out.
+ * them out. Proposals are not listed: each version has its own approval
+ * through ProposalService.
  */
 class RequestApprovalTool extends BaseTool
 {
     public const ACTIONS = [
         'send_outreach' => 'Send a drafted outreach message',
-        'send_proposal' => 'Send a proposal to a customer',
         'publish_release' => 'Publish a release',
         'other' => 'Another action described in the summary',
     ];

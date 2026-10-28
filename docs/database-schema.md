@@ -229,3 +229,40 @@ One row per tool call, including refused ones.
 | approval_request_id | FK, null | for Level 2 calls |
 | error_code, error_message | string, text, null | see the runbook |
 | started_at, finished_at | timestamps | |
+
+## proposals
+
+One row per **version**. Versions of the same proposal share `reference` (`P-00001`); `(reference, version)` is unique. Written only by `ProposalService`. Once a version leaves `draft`, its content columns cannot change (model guard); changes need a new version.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| reference | string(48), indexed | `P-` + id of the first version |
+| version | unsigned int | 1, 2, … |
+| previous_version_id | FK proposals, null, **unique** | a version can be superseded only once |
+| lead_id, customer_id | FK, null | exactly one is set |
+| service_package_id | FK, restrict | |
+| title, introduction | string(200), text | |
+| recipient_name, recipient_email | string, null | defaults from the lead or customer; checked before submit and send |
+| scope_snapshot | json | package name, scope, exclusions, estimated days, revisions at drafting time |
+| subtotal_minor, discount_minor, amount_minor | bigint | computed by `ProposalPricing`, never entered |
+| discount_reason | string(500), null | required when there is a discount |
+| currency | char(3) | the package's currency |
+| payment_terms | text | |
+| status | string(24), indexed | draft, pending_approval, approved, sent, accepted, rejected, changes_requested, expired, declined, withdrawn |
+| expires_at | date | validity date shown to the recipient |
+| approval_request_id | FK, null | the current `proposal.send` approval |
+| content_hash | char(64), null | SHA-256 of the approved payload |
+| submitted_at, approved_at, sent_at, responded_at | timestamps, null | |
+| delivery_method | string(16), null | `email` or `manual` |
+| delivery_status | string(32), null | `accepted_by_mail_server`, `not_delivered_local_mailer`, `recorded_manually`, `failed` |
+| delivery_reference | string, null | message id returned by the mailer |
+| response_note | text, null | the recipient's answer as recorded by a person |
+| created_by_user_id, created_by_agent_id | FK, null | |
+
+## proposal_items
+
+Priced lines of a version, ordered by `position`; position 0 is the package at its price. `line_total_minor` = `quantity` × `unit_price_minor`. Lines cannot be created, changed or deleted once the version leaves draft (model guard).
+
+## proposal_events
+
+Append-only history of a version (model guard): `event_type` (created, edited, submitted, approval_requested_again, approved, rejected, sent, send_refused, send_failed, accepted, declined, changes_requested, expired, withdrawn, superseded, version_created), `actor_type` (user, agent, system), `actor_id`, redacted `metadata`, `created_at`.

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\ApprovalStatus;
 use App\Enums\RiskLevel;
 use App\Enums\ToolExecutionStatus;
+use App\Events\ApprovalDecided;
 use App\Governance\ApprovalRefused;
 use App\Governance\Payload;
 use App\Jobs\ExecuteApprovedAction;
@@ -146,6 +147,8 @@ class ApprovalService
                 'payload_hash' => $request->payload_hash,
                 'reason' => $reason,
             ], $approver);
+
+            event(new ApprovalDecided($request));
 
             if ($approve) {
                 if (ToolExecution::query()->where('approval_request_id', $request->id)->exists()) {
@@ -335,6 +338,25 @@ class ApprovalService
             $request->execution_result = ['error' => $code, 'message' => $message];
             $request->save();
             $this->audit->record('approval.abandoned', $request, ['reason' => $code], actorType: 'system');
+        });
+    }
+
+    /**
+     * Close a request that is still pending or approved because the action
+     * it covers changed or was withdrawn. Returns whether it was closed.
+     */
+    public function invalidate(ApprovalRequest $request, string $code, string $message): bool
+    {
+        return DB::transaction(function () use ($request, $code, $message) {
+            $request = ApprovalRequest::query()->lockForUpdate()->findOrFail($request->id);
+
+            if (! in_array($request->status, [ApprovalStatus::Pending, ApprovalStatus::Approved], true)) {
+                return false;
+            }
+
+            $this->close($request, ApprovalStatus::Invalidated, $code, $message);
+
+            return true;
         });
     }
 

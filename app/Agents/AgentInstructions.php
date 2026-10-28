@@ -28,6 +28,20 @@ final class AgentInstructions
         return resource_path("agents/{$agent->role->value}/{$version}.md");
     }
 
+    /**
+     * Instruction versions available for a role, oldest first.
+     *
+     * @return list<string>
+     */
+    public static function versions(Agent $agent): array
+    {
+        $files = glob(resource_path("agents/{$agent->role->value}/*.md")) ?: [];
+        $versions = array_map(fn ($f) => basename($f, '.md'), $files);
+        natsort($versions);
+
+        return array_values($versions);
+    }
+
     public static function load(Agent $agent): ?string
     {
         $path = self::path($agent);

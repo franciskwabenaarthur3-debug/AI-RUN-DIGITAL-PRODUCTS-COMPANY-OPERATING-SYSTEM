@@ -107,4 +107,9 @@ class Lead extends Model
             ->where('next_follow_up_at', '<=', now())
             ->whereNotIn('status', [LeadStatus::Converted, LeadStatus::Unsubscribed, LeadStatus::Lost, LeadStatus::Disqualified]);
     }
+
+    public function proposals(): HasMany
+    {
+        return $this->hasMany(Proposal::class)->latest('id');
+    }
 }

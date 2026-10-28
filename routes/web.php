@@ -8,6 +8,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LeadActionController;
 use App\Http\Controllers\LeadController;
+use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\ServicePackageController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TaskController;
@@ -39,6 +40,16 @@ Route::middleware(['auth', 'active'])->group(function () {
 
     Route::resource('customers', CustomerController::class)->except('destroy');
     Route::resource('service-packages', ServicePackageController::class)->except(['show', 'destroy']);
+
+    Route::resource('proposals', ProposalController::class)->except('destroy');
+    Route::prefix('proposals/{proposal}')->name('proposals.')->controller(ProposalController::class)->group(function () {
+        Route::get('preview', 'preview')->name('preview');
+        Route::post('submit', 'submit')->name('submit');
+        Route::post('send', 'send')->name('send');
+        Route::post('respond', 'respond')->name('respond');
+        Route::post('withdraw', 'withdraw')->name('withdraw');
+        Route::post('new-version', 'newVersion')->name('new-version');
+    });
 
     Route::get('agents', [AgentController::class, 'index'])->name('agents.index');
     Route::get('agents/{agent}', [AgentController::class, 'show'])->name('agents.show');

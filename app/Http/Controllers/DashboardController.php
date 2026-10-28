@@ -6,6 +6,7 @@ use App\Enums\AgentRunStatus;
 use App\Enums\ApprovalStatus;
 use App\Enums\CustomerStatus;
 use App\Enums\LeadStatus;
+use App\Enums\ProposalStatus;
 use App\Models\AgentRun;
 use App\Models\ApprovalRequest;
 use App\Models\AuditLog;
@@ -13,6 +14,7 @@ use App\Models\CompanySetting;
 use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\ModelUsage;
+use App\Models\Proposal;
 use App\Models\ServicePackage;
 use App\Models\Task;
 use App\Services\AiBudgetMonitor;
@@ -33,6 +35,9 @@ class DashboardController extends Controller
             'leadCount' => Lead::query()->count(),
             'qualifiedCount' => Lead::query()->where('status', LeadStatus::Qualified)->count(),
             'followUpsDue' => Lead::query()->followUpDue()->count(),
+            'proposalsAwaitingApproval' => Proposal::query()->where('status', ProposalStatus::PendingApproval)->count(),
+            'proposalsSent' => Proposal::query()->where('status', ProposalStatus::Sent)->count(),
+            'proposalsAccepted' => Proposal::query()->where('status', ProposalStatus::Accepted)->count(),
             'customerCount' => Customer::query()->where('status', CustomerStatus::Active)->count(),
             'tasksByStatus' => Task::query()->selectRaw('status, COUNT(*) as total')->groupBy('status')->pluck('total', 'status'),
             'failedRuns' => AgentRun::query()->where('status', AgentRunStatus::Failed)->where('created_at', '>=', now()->subDays(7))->count(),

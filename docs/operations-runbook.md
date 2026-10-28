@@ -8,7 +8,7 @@ Covers what exists today. Deployment, backup and alerting procedures will be add
 | --- | --- | --- |
 | Web | `php artisan serve` locally; PHP-FPM behind a web server in production | The app |
 | Queue worker | `php artisan queue:work --tries=1 --timeout=900` | Runs agent tasks (`RunAgentTask`) and approved tool calls (`ExecuteApprovedAction`). Use a process manager (e.g. Supervisor) to restart it |
-| Scheduler | cron: `* * * * * php /path/to/artisan schedule:run` (locally `php artisan schedule:work`) | Runs `company-os:recover-stale-runs` and `company-os:expire-approvals` every five minutes |
+| Scheduler | cron: `* * * * * php /path/to/artisan schedule:run` (locally `php artisan schedule:work`) | Runs `company-os:recover-stale-runs` and `company-os:expire-approvals` every five minutes and `company-os:expire-proposals` hourly |
 
 `--tries=1` matters: the task runner decides retries itself, so the queue must not retry jobs on its own.
 
@@ -52,6 +52,13 @@ Blocked tasks carry the reason in their failure message (disabled agent, unavail
 | `invalid_input` | Validation failed or unknown fields were sent |
 | `tool_error` | The tool ran and failed; the message says why (unexpected errors go to the error log) |
 | `approval_rejected`, `approval_expired`, `payload_mismatch` | The Level 2 call's approval did not allow execution |
+
+## Proposals
+
+- **Turn on email sending:** set `MAIL_MAILER` and its settings to a real mail service, set `PROPOSALS_EMAIL_ENABLED=true` (optionally `PROPOSALS_MAILER` to use a different mailer), and restart PHP and the workers. Send one proposal to yourself first. With `MAIL_MAILER=log` the proposal page will say `Not delivered local mailer`.
+- **A send failed:** the proposal page shows `Failed` under Delivery and the error in History. Nothing counted as sent. Fix the mail settings, then use "Request approval again", approve, and send.
+- **A send needs reconciliation:** the worker or request died after sending started. Check the mail service or ask the recipient whether it arrived. If it did, request approval again and record a manual send that says so; if not, request approval again and send.
+- **Discount limit:** `PROPOSALS_MAX_DISCOUNT_PERCENT` (default 20).
 
 ## Approvals needing reconciliation
 
